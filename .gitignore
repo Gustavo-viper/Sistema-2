@@ -1,0 +1,14 @@
+# Sistema Operacional
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+
+# Backups locais
+*.bak
+*~
+node_modules/

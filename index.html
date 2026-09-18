@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistência Técnica Gustavo & Emily</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .auth-btn-container { position: absolute; top: 1rem; right: 2rem; }
+        .auth-btn { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .auth-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
+        @media (max-width: 768px) { .auth-btn-container { position: static; text-align: center; margin-bottom: 1rem; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <a href="#" class="logo">
+            <div class="logo-icon">GE</div>
+            <div class="logo-text">
+                <h1>Assistência Técnica Gustavo & Emily</h1>
+                <span>Celulares e Computadores</span>
+            </div>
+        </a>
+        <div class="header-date"><span id="currentDate"></span></div>
+        <div class="auth-btn-container">
+            <a href="login.html" class="auth-btn">🏠 Área do Cliente</a>
+        </div>
+    </header>
+    <main class="container">
+        <section class="stats-grid" id="statsGrid"></section>
+        <div style="display:grid;grid-template-columns:1fr 350px;gap:2rem;">
+            <section class="section">
+                <div class="section-header">
+                    <div class="section-icon">📱</div>
+                    <div><h2 class="section-title">Novo Orçamento</h2><p class="section-subtitle">Crie orçamentos automáticos</p></div>
+                </div>
+                <div id="budgetAlerts"></div>
+                <form id="budgetForm">
+                    <div class="form-group">
+                        <label class="form-label">Buscar Cliente <span class="required">*</span></label>
+                        <div class="search-box">
+                            <input type="text" class="search-input" id="clientSearch" placeholder="Nome, telefone ou email...">
+                            <button type="button" class="search-btn" onclick="searchClients()">Buscar</button>
+                        </div>
+                        <div class="search-results" id="searchResults" style="display:none;"></div>
+                        <div id="selectedClient" style="display:none;margin-top:1rem;"></div>
+                        <div class="form-error" id="clientError">Selecione um cliente</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Aparelho <span class="required">*</span></label>
+                            <select class="form-select" id="deviceType" required>
+                                <option value="">Selecione...</option>
+                                <optgroup label="Celulares">
+                                    <option value="iPhone">iPhone</option>
+                                    <option value="Samsung Galaxy">Samsung Galaxy</option>
+                                    <option value="Xiaomi">Xiaomi</option>
+                                    <option value="Motorola">Motorola</option>
+                                    <option value="Outro">Outro</option>
+                                </optgroup>
+                                <optgroup label="Computadores">
+                                    <option value="PC">PC Desktop</option>
+                                    <option value="Notebook">Notebook</option>
+                                    <option value="MacBook">MacBook</option>
+                                    <option value="Outro">Outro</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Problema <span class="required">*</span></label>
+                            <select class="form-select" id="problemType" required>
+                                <option value="">Selecione...</option>
+                                <optgroup label="Tela">
+                                    <option value="Tela Quebrada">Tela Quebrada</option>
+                                    <option value="Tela Manchas">Tela com Manchas</option>
+                                    <option value="Display">Display Defeituoso</option>
+                                </optgroup>
+<optgroup label="Bateria">
+                                    <option value="Bateria">Bateria Dura Pouco</option>
+                                    <option value="Expandida">Bateria Expandida</option>
+                                    <option value="Carrega">Não Carrega</option>
+                                </optgroup>
+                                <optgroup label="Áudio">
+                                    <option value="Som">Sem Som</option>
+                                    <option value="Voz">Voz Baixa</option>
+                                </optgroup>
+                                <optgroup label="Software">
+                                    <option value="Virus">Vírus/Malware</option>
+                                    <option value="Lento">Lento</option>
+                                    <option value="Dados">Restauração de Dados</option>
+                                    <option value="Chip">Ativar/Chip</option>
+                                </optgroup>
+                                <optgroup label="Hardware">
+                                    <option value="Camera">Câmera</option>
+                                    <option value="Agua">Dano por Água</option>
+                                </optgroup>
+                                <optgroup label="PC">
+                                    <option value="SO">Reinstalar SO</option>
+                                    <option value="Limpeza">Limpeza Interna</option>
+                                    <option value="SSD">Troca HD/SSD</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+            <section class="section">
+                <div class="section-header">
+                    <div class="section-icon secondary">👥</div>
+                    <div><h2 class="section-title">Clientes</h2><p class="section-subtitle">Clientes cadastrados</p></div>
+                </div>
+                <button class="btn btn-sm btn-secondary" onclick="showAddClientForm()" style="margin-bottom:1rem;">+ Novo Cliente</button>
+                <div id="recentClients"></div>
+        <section class="section" style="margin-top:2rem;">
+            <div class="section-header">
+                <div class="section-icon warning">⚡</div>
+                <div><h2 class="section-title">Serviços em Andamento</h2><p class="section-subtitle">Orçamentos aprovados</p></div>
+            </div>
+            <div class="search-box">
+                <input type="text" class="search-input" id="serviceSearch" placeholder="Buscar..." oninput="filterServices()">
+                <select class="form-select" id="filterStatus" style="width:150px;" onchange="filterServices()">
+                    <option value="all">Todos</option>
+                    <option value="pending">Aguardando</option>
+                    <option value="processing">Em Andamento</option>
+                    <option value="ready">Pronto</option>
+                    <option value="completed">Concluído</option>
+                </select>
+            </div>
+            <div id="servicesList"></div>
+            <div id="noServicesMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum serviço</p></div>
+        </section>
+        <section class="section" style="margin-top:2rem;">
+            <div class="section-header">
+                <div class="section-icon danger">📋</div>
+                <div><h2 class="section-title">Histórico de Serviços</h2><p class="section-subtitle">Todos os serviços</p></div>
+            </div>
+            <div class="table-container">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Aparelho</th>
+    <div class="modal-overlay" id="serviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Detalhes do Serviço</h3>
+                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
+        </div>
+    </div>
+    <div class="completed-notification" id="completedNotification" style="display:none;"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="script.js"></script>
+</body>
+</html>
+                            <th>Problema</th>
+                            <th>Orçamento</th>
+                            <th>Sinal</th>
+                            <th>Restante</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="servicesTableBody"></tbody>
+                </table>
+            </div>
+            <div id="noHistoryMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum serviço no histórico</p></div>
+        </section>
+    </main>
+                <div id="noClientsMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum cliente cadastrado</p></div>
+            </section>
+        </div>
+                        <div class="form-group"><label class="form-label">Modelo</label><input type="text" class="form-input" id="deviceModel" placeholder="Ex: iPhone 13..."></div>
+                        <div class="form-group"><label class="form-label">Valor Estimado</label><input type="number" class="form-input" id="estimatedValue" placeholder="R$ 0,00" min="0" step="0.01"><div class="form-hint">Preenchido automaticamente</div></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="observations" placeholder="Especificações adicionais..."></textarea></div>
+                    <div class="payment-section">
+                        <h4>Como funciona o pagamento:</h4>
+                        <div class="payment-link-box">
+                            <div class="payment-link-icon">💳</div>
+                            <div class="payment-link-info">
+                                <div class="payment-link-label"><strong>50%</strong> como <strong>sinal</strong> na aprovação do orçamento</div>
+                                <div class="payment-link-url">Link de pagamento será gerado automaticamente</div>
+                            </div>
+                        </div>
+                        <div class="payment-link-box">
+                            <div class="payment-link-icon">✅</div>
+                            <div class="payment-link-info">
+                                <div class="payment-link-label"><strong>50%</strong> restante no <strong>ato da entrega</strong> do aparelho</div>
+                                <div class="payment-link-url">Link será enviado quando o serviço for concluído</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBudgetBtn">Gerar Orçamento Automático</button>
+                </form>
+            </section>
