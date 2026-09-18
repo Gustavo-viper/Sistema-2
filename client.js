@@ -2,10 +2,11 @@
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', async function() {
-    if (!currentUser) {
-        redirectToLogin();
-        return;
-    }
+    if (!supabase) { redirectToLogin(); return; }
+    var sess = await supabase.auth.getSession();
+    if (!sess.data.session) { redirectToLogin(); return; }
+    currentUser = sess.data.session.user;
+    await loadUserProfile();
     await loadProfile();
     await loadMyServices();
     await loadClientHistory();
@@ -39,77 +40,71 @@ function formatDateTime(date) {
     return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(date));
 }
 
-// Carregar serviços do cliente
-async function loadMyServices() {
-    const servicesList = document.getElementById('myServicesList');
-    const noMsg = document.getElementById('noServicesClient');
-    
-    const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('client_id', currentUser.id)
-        .neq('status', 'cancelled')
-        .order('created_at', { ascending: false });
-    
-    if (error) {
-        toast('Erro ao carregar', error.message, 'error');
-        return;
-    }
-    
-    if (!data || data.length === 0) {
-        servicesList.innerHTML = '';
-        noMsg.style.display = 'block';
-        return;
-    }
-    
-    noMsg.style.display = 'none';
-    
-    servicesList.innerHTML = data.map(s => `
-        <div class="service-item-client ${s.status}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div>
-                    <h3>${s.device_type}${s.device_model ? ' - ' + s.device_model : ''}</h3>
-                    <p class="text-muted" style="font-size:0.875rem;">${s.problem_type}</p>
-                </div>
-                <span class="badge badge-${s.status}">${getStatusLabel(s.status)}</span>
-            </div>
-            <div class="service-details" style="margin-top:1rem;">
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Total</div>
-                    <div class="service-detail-value">R$ ${s.total_value?.toFixed(2) || '0,00'}</div>
-                </div>
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Sinal</div>
-                    <div class="service-detail-value small" style="color:${s.status !== 'pending' ? '#10b981' : '#ef4444'};">
-                        ${s.status !== 'pending' ? '✓ Pago' : '⚠ Pendente'}
-                    </div>
-                </div>
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Restante</div>
-                    <div class="service-detail-value small">R$ ${s.remaining_value?.toFixed(2) || '0,00'}</div>
-                </div>
-            </div>
-            <div style="margin-top:1rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
-                ${s.status === 'pending' ? `
-                    <button class="btn btn-success btn-sm" onclick="paySignal('${s.id}')">✓ Pagar Sinal</button>
-                ` : ''}
-                ${s.status === 'ready' ? `
-                    <button class="btn btn-success btn-sm" onclick="payRemaining('${s.id}')">💳 Pagar Restante</button>
-                ` : ''}
-                ${s.status === 'completed' ? `
-                    <button class="btn btn-secondary btn-sm" onclick="rateService('${s.id}')">⭐ Avaliar</button>
-                ` : ''}
-                <button class="btn btn-secondary btn-sm" onclick="showServiceDetails('${s.id}')">Detalhes</button>
-            </div>
-        </div>
-    `).join('');
+async function myClientId() {
+    try {
+        var r = await supabase.from('clients').select('id').eq('auth_user_id', currentUser.id).limit(1).maybeSingle();
+        if (r.data && r.data.id) return r.data.id;
+    } catch (e) {}
+    return null;
 }
 
-// Carregar histórico
+// Carregar servicos do cliente
+async function loadMyServices() {
+    var servicesList = document.getElementById('myServicesList');
+    var noMsg = document.getElementById('noServicesClient');
+    if (!servicesList) return;
+    var myId = await myClientId();
+    var q = supabase.from('services').select('*').neq('status', 'cancelled').order('created_at', { ascending: false });
+    if (myId) q = q.eq('client_id', myId);
+    else q = q.eq('client_user_id', currentUser.id);
+    var res = await q;
+    if (res.error) { toast('Erro ao carregar', res.error.message, 'error'); return; }
+    var data = res.data || [];
+    if (!data.length) { servicesList.innerHTML = ''; if (noMsg) noMsg.style.display = 'block'; return; }
+    if (noMsg) noMsg.style.display = 'none';
+    servicesList.innerHTML = data.map(function(s) {
+        var total = s.total_value != null ? s.total_value.toFixed(2) : '0,00';
+        var rest = s.remaining_value != null ? s.remaining_value.toFixed(2) : '0,00';
+        var btns = '';
+        if (s.status === 'pending') btns += '<button class="btn btn-success btn-sm" onclick="paySignal(\'' + s.id + '\')">Pagar Sinal</button> ';
+        if (s.status === 'ready') btns += '<button class="btn btn-success btn-sm" onclick="payRemaining(\'' + s.id + '\')">Pagar Restante</button> ';
+        if (s.status === 'completed') btns += '<button class="btn btn-secondary btn-sm" onclick="rateService(\'' + s.id + '\')">Avaliar</button> ';
+        btns += '<button class="btn btn-secondary btn-sm" onclick="showServiceDetails(\'' + s.id + '\')">Detalhes</button>';
+        return '<div class="service-item-client ' + s.status + '">'
+            + '<div><h3>' + s.device_type + '</h3><p class="text-muted">' + s.problem_type + '</p></div>'
+            + '<div class="service-details"><div class="service-detail-item"><div class="service-detail-label">Total</div><div class="service-detail-value">R$ ' + total + '</div></div>'
+            + '<div class="service-detail-item"><div class="service-detail-label">Restante</div><div class="service-detail-value small">R$ ' + rest + '</div></div></div>'
+            + '<div style="margin-top:1rem;display:flex;gap:0.5rem;flex-wrap:wrap;">' + btns + '</div>'
+            + '</div>';
+    }).join('');
+}
+
+// Carregar historico
 async function loadClientHistory() {
-    const tbody = document.getElementById('clientHistoryBody');
-    const noMsg = document.getElementById('noHistoryClient');
-    
+    var tbody = document.getElementById('clientHistoryBody');
+    var noMsg = document.getElementById('noHistoryClient');
+    if (!tbody) return;
+    var myId = await myClientId();
+    var q = supabase.from('services').select('*').order('created_at', { ascending: false });
+    if (myId) q = q.eq('client_id', myId);
+    else q = q.eq('client_user_id', currentUser.id);
+    var res = await q;
+    if (res.error) { toast('Erro ao carregar historico', res.error.message, 'error'); return; }
+    var data = res.data || [];
+    if (!data.length) { tbody.innerHTML = ''; if (noMsg) noMsg.style.display = 'block'; return; }
+    if (noMsg) noMsg.style.display = 'none';
+    tbody.innerHTML = data.map(function(s) {
+        return '<tr>'
+            + '<td>' + formatDate(s.created_at) + '</td>'
+            + '<td>' + s.device_type + '</td>'
+            + '<td>' + s.problem_type + '</td>'
+            + '<td><strong>R$ ' + (s.total_value != null ? s.total_value.toFixed(2) : '0,00') + '</strong></td>'
+            + '<td>' + getStatusBadge(s.status) + '</td>'
+            + '<td><button class="btn btn-sm btn-secondary" onclick="showServiceDetails(\'' + s.id + '\')">Ver</button></td>'
+            + '</tr>';
+    }).join('');
+}
+
 // Solicitar orçamento
 async function requestBudget() {
     toast('Em desenvolvimento', 'Em breve você poderá solicitar orçamentos pelo painel', 'info');
@@ -234,8 +229,6 @@ document.getElementById('serviceModal')?.addEventListener('click', function(e) {
     }
 });
 
-// A função toast() global vem do auth.js (carregado antes deste arquivo)
-
 // Avaliar serviço
 async function rateService(serviceId) {
     const rating = prompt('Avalie de 1 a 5 estrelas:');
@@ -254,38 +247,6 @@ async function rateService(serviceId) {
         .eq('id', serviceId);
     
     toast('Avaliação Enviada!', 'Obrigado pelo feedback!', 'success');
-}
-    const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('client_id', currentUser.id)
-        .order('created_at', { ascending: false });
-    
-    if (error) {
-        toast('Erro ao carregar histórico', error.message, 'error');
-        return;
-    }
-    
-    if (!data || data.length === 0) {
-        tbody.innerHTML = '';
-        noMsg.style.display = 'block';
-        return;
-    }
-    
-    noMsg.style.display = 'none';
-    
-    tbody.innerHTML = data.map(s => `
-        <tr>
-            <td>${formatDate(s.created_at)}</td>
-            <td>${s.device_type}</td>
-            <td>${s.problem_type}</td>
-            <td><strong>R$ ${s.total_value?.toFixed(2) || '0,00'}</strong></td>
-            <td>${getStatusBadge(s.status)}</td>
-            <td>
-                <button class="btn btn-sm btn-secondary" onclick="showServiceDetails('${s.id}')">Ver</button>
-            </td>
-        </tr>
-    `).join('');
 }
 function getStatusLabel(status) {
     const labels = {

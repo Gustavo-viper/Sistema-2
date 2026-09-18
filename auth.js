@@ -42,7 +42,11 @@ async function checkSession() {
     if (session) {
         currentUser = session.user;
         await loadUserProfile();
-        redirectToDashboard();
+        // Na página de login: manda para o destino (admin ou cliente)
+        // Nas outras páginas (admin/cliente): só define o usuário atual
+        if (window.location.pathname.toLowerCase().endsWith('login.html')) {
+            redirectToDashboard();
+        }
     }
 }
 
@@ -178,12 +182,32 @@ function showForgotPassword() {
 }
 
 // Redirecionamentos
-function redirectToDashboard() {
-    window.location.href = 'client.html';
+function getRedirectTarget() {
+    const next = new URLSearchParams(window.location.search).get('next');
+    // Evita loops: só aceita páginas conhecidas
+    if (next === 'index.html') return 'index.html';
+    return 'client.html';
 }
 
-function redirectToLogin() {
-    window.location.href = 'login.html';
+function redirectToDashboard() {
+    window.location.href = getRedirectTarget();
+}
+
+function redirectToLogin(nextPage) {
+    const target = nextPage || 'client.html';
+    window.location.href = 'login.html?next=' + target;
+}
+
+// O usuário logado é admin?
+async function isAdminUser() {
+    if (!currentUser || !supabase) return false;
+    try {
+        const { data, error } = await supabase.rpc('current_user_is_admin');
+        if (error) return false;
+        return data === true;
+    } catch (e) {
+        return false;
+    }
 }
 
 // Inicialização

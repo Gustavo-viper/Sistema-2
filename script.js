@@ -1,46 +1,10 @@
-/* Sistema de Assistência Técnica - Gustavo & Emily */
+/* Sistema de Assistência Técnica - Gustavo & Emily
+   Painel Admin - integrado ao Supabase */
 
-// Banco de Dados Local
-const DB = {
-    get(key) {
-        try {
-            return JSON.parse(localStorage.getItem('ge_' + key) || '[]');
-        } catch (e) {
-            return [];
-        }
-    },
-    set(key, data) {
-        localStorage.setItem('ge_' + key, JSON.stringify(data));
-    },
-    genId() {
-        return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    }
-};
+// ==================== FORMATAÇÃO ====================
 
-// Valores por tipo de problema
-const values = {
-    'Tela Quebrada': [150, 800],
-    'Tela Manchas': [100, 400],
-    'Display': [200, 900],
-    'Bateria': [80, 250],
-    'Expandida': [150, 400],
-    'Carrega': [80, 300],
-    'Som': [50, 200],
-    'Voz': [50, 180],
-    'Virus': [80, 250],
-    'Lento': [80, 200],
-    'Dados': [150, 500],
-    'Chip': [50, 150],
-    'Camera': [100, 400],
-    'Agua': [200, 800],
-    'SO': [100, 300],
-    'Limpeza': [80, 200],
-    'SSD': [150, 500]
-};
-
-// Formatacao
 function money(v) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(v) || 0);
 }
 
 function date(d) {
@@ -52,7 +16,7 @@ function datetime(d) {
 }
 
 function initials(name) {
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    return (name || '?').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 }
 
 function badge(status) {
@@ -66,9 +30,11 @@ function badge(status) {
     return b[status] || '<span>???</span>';
 }
 
-// Funções de UI
+// ==================== UI ====================
+
 function toast(title, msg, type = 'info') {
     const c = document.getElementById('toastContainer');
+    if (!c) return;
     const t = document.createElement('div');
     t.className = `toast ${type}`;
     const icons = {
@@ -91,6 +57,7 @@ function toast(title, msg, type = 'info') {
 
 function alertBox(type, title, msg) {
     const alerts = document.getElementById('budgetAlerts');
+    if (!alerts) return;
     const icon = type === 'success' ?
         '<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>' :
         '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M12 9v3.75m0-3.75a9 9 0 110 18 9 9 0 010-18z"/></svg>';
@@ -108,15 +75,68 @@ function alertBox(type, title, msg) {
     setTimeout(() => { if (a.parentElement) a.remove(); }, 8000);
 }
 
-// Data atual
-function updateDate() {
-    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+// ==================== CACHE EM MEMÓRIA ====================
+// Carregado do Supabase; usado pelas funções de render.
+
+let clientsCache = [];
+let servicesCache = [];
+
+function dbClients() { return clientsCache; }
+function dbServices() { return servicesCache; }
+
+// ==================== SUPABASE: CARREGAR DADOS ====================
+
+async function loadClientsFromDB() {
+    const { data, error } = await supabase
+        .from('clients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Erro ao carregar clientes:', error);
+        toast('Erro', 'Falha ao carregar clientes: ' + error.message, 'error');
+        return;
+    }
+    clientsCache = data || [];
 }
 
-// Estatísticas
+async function loadServicesFromDB() {
+    const { data, error } = await supabase
+        .from('services')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Erro ao carregar serviços:', error);
+        toast('Erro', 'Falha ao carregar serviços: ' + error.message, 'error');
+        return;
+    }
+    servicesCache = data || [];
+}
+
+async function refreshAll() {
+    await Promise.all([loadClientsFromDB(), loadServicesFromDB()]);
+    renderAll();
+}
+
+function renderAll() {
+    updateDate();
+    updateStats();
+    loadRecentClients();
+    filterServices();
+    loadHistoryTable();
+}
+
+function updateDate() {
+    document.getElementById('currentDate').textContent =
+        new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+// ==================== ESTATÍSTICAS ====================
+
 function updateStats() {
-    const clients = DB.get('clients');
-    const services = DB.get('services');
+    const services = dbServices();
+    const clients = dbClients();
 
     const totalClients = clients.length;
     const completedServices = services.filter(s => s.status === 'completed').length;
@@ -198,7 +218,7 @@ function cancelAddClient() {
     loadRecentClients();
 }
 
-function addNewClient() {
+async function addNewClient() {
     const name = document.getElementById('newClientName').value.trim();
     const phone = document.getElementById('newClientPhone').value.trim();
     const email = document.getElementById('newClientEmail').value.trim();
@@ -210,32 +230,29 @@ function addNewClient() {
         return;
     }
 
-    const clients = DB.get('clients');
+    const { data, error } = await supabase
+        .from('clients')
+        .insert([{ name, phone, email: email || null, address: address || null, vip }])
+        .select()
+        .single();
 
-    if (clients.some(c => c.phone === phone)) {
-        alertBox('error', 'Cliente Existente', 'Já existe um cliente com este telefone.');
+    if (error) {
+        if (error.code === '23505') {
+            alertBox('error', 'Cliente Existente', 'Já existe um cliente com este telefone.');
+        } else {
+            alertBox('error', 'Erro ao cadastrar', error.message);
+        }
         return;
     }
 
-    const newClient = {
-        id: DB.genId(),
-        name,
-        phone,
-        email: email || '',
-        address: address || '',
-        vip,
-        createdAt: new Date().toISOString()
-    };
-
-    clients.push(newClient);
-    DB.set('clients', clients);
-
     toast('Cliente Cadastrado', `${name} foi adicionado à lista.`, 'success');
+    clientsCache.unshift(data);
     cancelAddClient();
+    updateStats();
 }
 
 function loadRecentClients() {
-    const clients = DB.get('clients');
+    const clients = dbClients();
     const container = document.getElementById('recentClients');
     const noMsg = document.getElementById('noClientsMessage');
 
@@ -247,16 +264,14 @@ function loadRecentClients() {
 
     noMsg.style.display = 'none';
 
-    const recent = clients.slice(-5).reverse();
-
-    container.innerHTML = recent.map(client => `
+    container.innerHTML = clients.slice(0, 5).map(client => `
         <div class="service-item ${client.vip ? 'completed' : ''}" style="cursor:default;">
             <div class="customer-avatar" style="width:40px;height:40px;font-size:0.875rem;">${initials(client.name)}</div>
             <div class="service-item-info">
                 <div class="service-item-title">${client.name} ${client.vip ? '⭐' : ''}</div>
                 <div class="service-item-desc">${client.phone}${client.email ? ' • ' + client.email : ''}</div>
             </div>
-            <div class="service-item-date">📅 ${date(client.createdAt)}</div>
+            <div class="service-item-date">📅 ${date(client.created_at)}</div>
         </div>
     `).join('');
 }
@@ -276,11 +291,11 @@ function searchClients() {
     clearTimeout(searchTimeout);
 
     searchTimeout = setTimeout(() => {
-        const clients = DB.get('clients');
+        const clients = dbClients();
         const results = clients.filter(c =>
-            c.name.toLowerCase().includes(query.toLowerCase()) ||
-            c.phone.includes(query) ||
-            c.email.toLowerCase().includes(query.toLowerCase())
+            (c.name || '').toLowerCase().includes(query.toLowerCase()) ||
+            (c.phone || '').includes(query) ||
+            (c.email || '').toLowerCase().includes(query.toLowerCase())
         );
 
         const container = document.getElementById('searchResults');
@@ -289,7 +304,6 @@ function searchClients() {
             container.style.display = 'block';
             container.innerHTML = `
                 <div class="alert alert-info" style="margin:0;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
                     <div class="alert-message">Nenhum cliente encontrado para "${query}"</div>
                 </div>
             `;
@@ -307,9 +321,7 @@ function searchClients() {
 }
 
 function selectClient(id) {
-    const clients = DB.get('clients');
-    const client = clients.find(c => c.id === id);
-
+    const client = dbClients().find(c => c.id === id);
     if (!client) return;
 
     document.getElementById('selectedClient').style.display = 'block';
@@ -346,14 +358,33 @@ function generateRandomValue(problemType) {
 
 function generatePaymentLink(serviceId, type) {
     const baseUrl = window.location.origin + window.location.pathname;
-    if (type === 'signal') {
-        return `${baseUrl}?pay=${serviceId}&type=signal`;
-    } else {
-        return `${baseUrl}?pay=${serviceId}&type=remaining`;
-    }
+    return type === 'signal'
+        ? `${baseUrl}?pay=${serviceId}&type=signal`
+        : `${baseUrl}?pay=${serviceId}&type=remaining`;
 }
 
-document.getElementById('budgetForm').addEventListener('submit', function(e) {
+// Valores por tipo de problema
+const values = {
+    'Tela Quebrada': [150, 800],
+    'Tela Manchas': [100, 400],
+    'Display': [200, 900],
+    'Bateria': [80, 250],
+    'Expandida': [150, 400],
+    'Carrega': [80, 300],
+    'Som': [50, 200],
+    'Voz': [50, 180],
+    'Virus': [80, 250],
+    'Lento': [80, 200],
+    'Dados': [150, 500],
+    'Chip': [50, 150],
+    'Camera': [100, 400],
+    'Agua': [200, 800],
+    'SO': [100, 300],
+    'Limpeza': [80, 200],
+    'SSD': [150, 500]
+};
+
+document.getElementById('budgetForm').addEventListener('submit', async function(e) {
     e.preventDefault();
 
     const btn = document.getElementById('submitBudgetBtn');
@@ -378,38 +409,43 @@ document.getElementById('budgetForm').addEventListener('submit', function(e) {
         return;
     }
 
+    const client = dbClients().find(c => c.id === clientId);
     const totalValue = generateRandomValue(problemType);
     const signalValue = Math.round(totalValue * 0.5);
     const remainingValue = totalValue - signalValue;
+    const payId = 'svc_' + Date.now();
 
-    const payId = 'new_' + Date.now();
-    const service = {
-        id: DB.genId(),
-        clientId: clientId,
-        clientName: '',
-        deviceType: deviceType,
-        deviceModel: document.getElementById('deviceModel').value.trim(),
-        problemType: problemType,
-        observations: document.getElementById('observations').value.trim(),
-        totalValue: totalValue,
-        signalValue: signalValue,
-        remainingValue: remainingValue,
-        signalLink: generatePaymentLink(payId, 'signal'),
-        remainingLink: generatePaymentLink(payId, 'remaining'),
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+    const row = {
+        client_id: clientId,
+        client_user_id: client && client.auth_user_id ? client.auth_user_id : null,
+        device_type: deviceType,
+        device_model: document.getElementById('deviceModel').value.trim() || null,
+        problem_type: problemType,
+        observations: document.getElementById('observations').value.trim() || null,
+        total_value: totalValue,
+        signal_value: signalValue,
+        remaining_value: remainingValue,
+        signal_link: generatePaymentLink(payId, 'signal'),
+        remaining_link: generatePaymentLink(payId, 'remaining'),
+        status: 'pending'
     };
 
-    const clients = DB.get('clients');
-    const client = clients.find(c => c.id === clientId);
-    if (client) service.clientName = client.name;
+    const { data, error } = await supabase
+        .from('services')
+        .insert([row])
+        .select()
+        .single();
 
-    const services = DB.get('services');
-    services.push(service);
-    DB.set('services', services);
+    if (error) {
+        toast('Erro ao criar orçamento', error.message, 'error');
+        btn.disabled = false;
+        btn.textContent = 'Gerar Orçamento Automático';
+        return;
+    }
 
-    toast('Orçamento Criado!', `Serviço para ${service.clientName}`, 'success');
+    servicesCache.unshift(data);
+
+    toast('Orçamento Criado!', `Serviço para ${client ? client.name : 'cliente'}`, 'success');
 
     clearSelectedClient();
     document.getElementById('deviceType').value = '';
@@ -418,336 +454,166 @@ document.getElementById('budgetForm').addEventListener('submit', function(e) {
     document.getElementById('observations').value = '';
 
     alertBox('success', 'Orçamento Gerado!', `
-        <p>Serviço para <strong>${service.clientName}</strong></p>
-        <p>Total: ${money(service.totalValue)} | Sinal: ${money(service.signalValue)}</p>
+        <p>Serviço para <strong>${client ? client.name : 'cliente'}</strong></p>
+        <p>Total: ${money(data.total_value)} | Sinal: ${money(data.signal_value)}</p>
         <p>Envie o link de pagamento pelo WhatsApp.</p>
     `);
 
     btn.disabled = false;
     btn.textContent = 'Gerar Orçamento Automático';
-    loadServicesList();
+    filterServices();
+    loadHistoryTable();
     updateStats();
 });
 
-// ==================== LISTAGEM DE SERVIÇOS ====================
+function esc(t) {
+    return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function serviceClientName(s) {
+    var c = clientsCache.find(function(x) { return x.id === s.client_id; });
+    if (c) return c;
+    return { id: s.client_id, name: 'Cliente', phone: '', email: '' };
+}
 
 function filterServices() {
-    const search = document.getElementById('serviceSearch').value.toLowerCase();
-    const statusFilter = document.getElementById('filterStatus').value;
-
-    const services = DB.get('services');
-
-    const filtered = services.filter(s => {
-        const matchSearch = !search ||
-            s.clientName.toLowerCase().includes(search) ||
-            s.deviceType.toLowerCase().includes(search) ||
-            s.problemType.toLowerCase().includes(search);
-
-        const matchStatus = statusFilter === 'all' || s.status === statusFilter;
-
-        return matchSearch && matchStatus;
+    var q = (document.getElementById('serviceSearch').value || '').toLowerCase();
+    var st = document.getElementById('filterStatus').value;
+    var list = document.getElementById('servicesList');
+    var empty = document.getElementById('noServicesMessage');
+    var items = servicesCache.filter(function(s) {
+        if (s.status === 'completed' || s.status === 'cancelled') return false;
+        if (st !== 'all' && s.status !== st) return false;
+        if (!q) return true;
+        var c = serviceClientName(s);
+        var hay = ((c.name || '') + ' ' + (s.device_type || '') + ' ' + (s.device_model || '') + ' ' + (s.problem_type || '')).toLowerCase();
+        return hay.indexOf(q) !== -1;
     });
-
-    const container = document.getElementById('servicesList');
-
-    if (filtered.length === 0) {
-        container.innerHTML = '';
-        document.getElementById('noServicesMessage').style.display = 'block';
-        return;
-    }
-
-    document.getElementById('noServicesMessage').style.display = 'none';
-
-    container.innerHTML = filtered.map(s => `
-        <div class="service-card ${s.status}">
-            <div class="service-card-header">
-                <div class="service-customer">
-                    <div class="customer-avatar">${initials(s.clientName)}</div>
-                    <div class="service-info">
-                        <h3>${s.clientName}</h3>
-                        <div class="service-device">${s.deviceType}${s.deviceModel ? ' - ' + s.deviceModel : ''}</div>
-                    </div>
-                </div>
-                ${badge(s.status)}
-            </div>
-            <div class="service-details">
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Problema</div>
-                    <div class="service-detail-value small">${s.problemType}</div>
-                </div>
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Total</div>
-                    <div class="service-detail-value">${money(s.totalValue)}</div>
-                </div>
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Sinal</div>
-                    <div class="service-detail-value small" style="color:${s.status !== 'pending' ? '#10b981' : '#ef4444'}">${s.status !== 'pending' ? '✓' : '⏳'} ${money(s.signalValue)}</div>
-                </div>
-                <div class="service-detail-item">
-                    <div class="service-detail-label">Restante</div>
-                    <div class="service-detail-value small" style="color:${s.status === 'pending' ? '#f59e0b' : '#6b7280'}">${money(s.remainingValue)}</div>
-                </div>
-            </div>
-            <div class="service-actions">
-                ${s.status === 'pending' ? `<button class="btn btn-success btn-sm" onclick="markPaidSignal('${s.id}')">✓ Pagar Sinal</button>` : ''}
-                ${s.status === 'processing' || s.status === 'pending' ? `<button class="btn btn-warning btn-sm" onclick="updateStatus('${s.id}','processing')">Iniciar</button>` : ''}
-                ${s.status === 'processing' ? `<button class="btn btn-success btn-sm" onclick="markReady('${s.id}')">✓ Pronto</button>` : ''}
-                ${s.status === 'ready' ? `<button class="btn btn-success btn-sm" onclick="completeService('${s.id}')">🎉 Concluir</button>` : ''}
-                <button class="btn btn-secondary btn-sm" onclick="showServiceModal('${s.id}')">Detalhes</button>
-            </div>
-        </div>
-    `).join('');
+    if (!items.length) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    list.innerHTML = items.map(function(s) {
+        var c = serviceClientName(s);
+        var actions = '';
+        if (s.status === 'pending') {
+            actions = '<button class="btn btn-sm btn-success" onclick="approveService(\'' + s.id + '\')">Aprovar (sinal pago)</button> '
+                + '<button class="btn btn-sm btn-danger" onclick="deleteService(\'' + s.id + '\')">Excluir</button>';
+        } else if (s.status === 'processing') {
+            actions = '<button class="btn btn-sm btn-primary" onclick="markReady(\'' + s.id + '\')">Pronto p/ retirada</button>';
+        } else if (s.status === 'ready') {
+            actions = '<button class="btn btn-sm btn-success" onclick="markComplete(\'' + s.id + '\')">Concluir (restante pago)</button>';
+        }
+        return '<div class="service-card">'
+            + '<div class="service-header"><div><strong>' + esc(c.name) + '</strong>'
+            + '<div class="text-muted">' + esc(s.device_type) + ' | ' + esc(s.problem_type) + '</div></div>'
+            + badge(s.status) + '</div>'
+            + '<div class="service-details">'
+            + '<div class="service-detail-item"><div class="service-detail-label">Total</div><div class="service-detail-value">' + money(s.total_value) + '</div></div>'
+            + '<div class="service-detail-item"><div class="service-detail-label">Sinal 50%</div><div class="service-detail-value small">' + money(s.signal_value) + '</div></div>'
+            + '<div class="service-detail-item"><div class="service-detail-label">Restante 50%</div><div class="service-detail-value small">' + money(s.remaining_value) + '</div></div>'
+            + '</div>'
+            + '<div class="service-actions">'
+            + '<button class="btn btn-sm btn-secondary" onclick="showServiceDetails(\'' + s.id + '\')">Detalhes</button> ' + actions
+            + '</div></div>';
+    }).join('');
 }
-
-function loadServicesList() {
-    filterServices();
-}
-
-// ==================== AÇÕES NOS SERVIÇOS ====================
-
-function updateStatus(serviceId, newStatus) {
-    const services = DB.get('services');
-    const service = services.find(s => s.id === serviceId);
-    if (!service) return;
-
-    service.status = newStatus;
-    service.updatedAt = new Date().toISOString();
-    DB.set('services', services);
-
-    toast('Status Atualizado', `Serviço: ${newStatus}`, 'success');
-    loadServicesList();
-    updateStats();
-}
-
-function markPaidSignal(serviceId) {
-    updateStatus(serviceId, 'processing');
-    toast('Sinal Confirmado', 'Cliente pagou 50% do sinal', 'success');
-}
-
-function markReady(serviceId) {
-    const services = DB.get('services');
-    const service = services.find(s => s.id === serviceId);
-    if (!service) return;
-
-    service.status = 'ready';
-    service.updatedAt = new Date().toISOString();
-    DB.set('services', services);
-
-    toast('Aparelho Pronto!', 'Cliente pode retirar', 'success');
-
-    alertBox('success', '✅ Serviço Pronto para Entrega!', `
-        <p>Aparelho de <strong>${service.clientName}</strong> está pronto!</p>
-        <p>Restam <strong>${money(service.remainingValue)}</strong> para pagar.</p>
-        <div style="margin-top:1rem;padding:1rem;background:#f9fafb;border-radius:8px;">
-            <code style="word-break:break-all;font-size:0.75rem;">${service.remainingLink}</code>
-        </div>
-    `);
-
-    loadServicesList();
-    updateStats();
-}
-
-function completeService(serviceId) {
-    const services = DB.get('services');
-    const service = services.find(s => s.id === serviceId);
-    if (!service) return;
-
-    service.status = 'completed';
-    service.updatedAt = new Date().toISOString();
-    DB.set('services', services);
-
-    // ==================== NOTIFICAÇÃO AUTOMÁTICA ====================
-    // Quando o serviço é marcado como concluído, o cliente é avisado
-    // de que o aparelho está pronto para retirada e recebe o link
-    // de pagamento dos 50% finais.
-
-    toast('🎉 Serviço Concluído!', 'Notificação enviada ao cliente', 'success');
-
-    const notif = document.getElementById('completedNotification');
-    notif.style.display = 'flex';
-    notif.innerHTML = `
-        <div style="font-size:1.5rem;">✅</div>
-        <div>
-            <div style="font-weight:600;">Serviço Concluído com Sucesso!</div>
-            <div style="font-size:0.875rem;opacity:0.9;">Notificação enviada ao cliente ${service.clientName}</div>
-        </div>
-    `;
-
-    setTimeout(() => { notif.style.display = 'none'; }, 5000);
-
-    alertBox('success', '🎉 Serviço Concluído!', `
-        <p>✅ <strong>${service.clientName}</strong> - Aparelho pronto para retirada!</p>
-        <p>Faltam <strong>${money(service.remainingValue)}</strong> para pagamento final.</p>
-        <div style="margin-top:1rem;padding:1rem;background:#f9fafb;border-radius:8px;">
-            <p style="margin:0;"><strong>Link de Pagamento Final:</strong></p>
-            <code style="word-break:break-all;font-size:0.75rem;margin-top:0.5rem;display:block;">${service.remainingLink}</code>
-        </div>
-        <p style="margin-top:0.75rem;font-size:0.875rem;color:#6b7280;">
-            💡 Envie este link para o cliente via WhatsApp para pagar os 50% finais.
-        </p>
-    `);
-
-    loadServicesList();
-    updateStats();
-    loadHistoryTable();
-}
-
-function cancelService(serviceId) {
-    if (!confirm('Tem certeza que deseja cancelar este serviço?')) return;
-
-    const services = DB.get('services');
-    const service = services.find(s => s.id === serviceId);
-    if (!service) return;
-
-    service.status = 'cancelled';
-    service.updatedAt = new Date().toISOString();
-    DB.set('services', services);
-
-    toast('Serviço Cancelado', service.clientName, 'warning');
-    loadServicesList();
-    updateStats();
-    loadHistoryTable();
-}
-
-// ==================== HISTÓRICO ====================
 
 function loadHistoryTable() {
-    const services = DB.get('services');
-    const tbody = document.getElementById('servicesTableBody');
-
-    if (services.length === 0) {
-        tbody.innerHTML = '';
-        document.getElementById('noHistoryMessage').style.display = 'block';
-        return;
-    }
-
-    document.getElementById('noHistoryMessage').style.display = 'none';
-
-    const sorted = [...services].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-    tbody.innerHTML = sorted.map(s => `
-        <tr class="${s.status === 'completed' ? 'completed' : ''}">
-            <td>
-                <div style="display:flex;align-items:center;gap:0.5rem;">
-                    <div class="customer-avatar" style="width:32px;height:32px;font-size:0.75rem;">${initials(s.clientName)}</div>
-                    <strong>${s.clientName}</strong>
-                </div>
-            </td>
-            <td>${s.deviceType}${s.deviceModel ? ' - ' + s.deviceModel : ''}</td>
-            <td>${s.problemType}</td>
-            <td><strong>${money(s.totalValue)}</strong></td>
-            <td>${s.status !== 'pending' ? `<span style="color:#10b981;">✓ ${money(s.signalValue)}</span>` : `<span style="color:#ef4444;">⏳ ${money(s.signalValue)}</span>`}</td>
-            <td>${s.status === 'completed' ? `<span style="color:#10b981;">✓ ${money(s.remainingValue)}</span>` : money(s.remainingValue)}</td>
-            <td>${badge(s.status)}</td>
-            <td>
-                <button class="btn btn-sm btn-secondary" onclick="showServiceModal('${s.id}')" style="margin-right:0.5rem;">Ver</button>
-                ${s.status !== 'completed' && s.status !== 'cancelled' ? `<button class="btn btn-sm btn-danger" onclick="cancelService('${s.id}')">Cancelar</button>` : ''}
-            </td>
-        </tr>
-    `).join('');
+    var tbody = document.getElementById('servicesTableBody');
+    var empty = document.getElementById('noHistoryMessage');
+    if (!servicesCache.length) { tbody.innerHTML = ''; empty.style.display = 'block'; return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = servicesCache.map(function(s) {
+        var c = serviceClientName(s);
+        return '<tr><td>' + esc(c.name) + '</td>'
+            + '<td>' + esc(s.device_type) + '</td>'
+            + '<td>' + esc(s.problem_type) + '</td>'
+            + '<td>' + money(s.total_value) + '</td>'
+            + '<td>' + money(s.signal_value) + '</td>'
+            + '<td>' + money(s.remaining_value) + '</td>'
+            + '<td>' + badge(s.status) + '</td>'
+            + '<td><button class="btn btn-sm btn-secondary" onclick="showServiceDetails(\'' + s.id + '\')">Ver</button></td></tr>';
+    }).join('');
 }
 
-// ==================== MODAL DE DETALHES ====================
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-function showServiceModal(serviceId) {
-    const services = DB.get('services');
-    const service = services.find(s => s.id === serviceId);
-
-    if (!service) return;
-
-    document.getElementById('modalTitle').textContent = `Detalhes de ${service.clientName}`;
-
-    document.getElementById('modalBody').innerHTML = `
-        <div style="display:grid;gap:1rem;">
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Informações do Cliente</h4>
-                <p class="text-muted">${service.clientName}</p>
-            </div>
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Aparelho</h4>
-                <p class="text-muted">${service.deviceType}${service.deviceModel ? ' - ' + service.deviceModel : ''}</p>
-            </div>
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Problema</h4>
-                <p class="text-muted">${service.problemType}</p>
-            </div>
-            ${service.observations ? `
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Observações</h4>
-                <p class="text-muted">${service.observations}</p>
-            </div>
-            ` : ''}
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Valores</h4>
-                <div class="service-details" style="margin:0;">
-                    <div class="service-detail-item">
-                        <div class="service-detail-label">Total</div>
-                        <div class="service-detail-value">${money(service.totalValue)}</div>
-                    </div>
-                    <div class="service-detail-item">
-                        <div class="service-detail-label">Sinal</div>
-                        <div class="service-detail-value small" style="color:${service.status !== 'pending' ? '#10b981' : '#ef4444'};">${service.status !== 'pending' ? '✓ Pago' : '⏳ Pendente'}</div>
-                    </div>
-                    <div class="service-detail-item">
-                        <div class="service-detail-label">Restante</div>
-                        <div class="service-detail-value small">${money(service.remainingValue)}</div>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Links de Pagamento</h4>
-                <div class="payment-section" style="margin:0;">
-                    <div class="payment-link-box">
-                        <div class="payment-link-icon">💳</div>
-                        <div class="payment-link-info">
-                            <div class="payment-link-label">Sinal (50%) - ${money(service.signalValue)}</div>
-                            <div class="payment-link-url">${service.signalLink}</div>
-                        </div>
-                    </div>
-                    <div class="payment-link-box">
-                        <div class="payment-link-icon">✅</div>
-                        <div class="payment-link-info">
-                            <div class="payment-link-label">Restante (50%) - ${money(service.remainingValue)}</div>
-                            <div class="payment-link-url">${service.remainingLink}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <h4 style="font-weight:600;margin-bottom:0.25rem;">Status</h4>
-                <p class="text-muted">Criado em: ${datetime(service.createdAt)}</p>
-                <p class="text-muted">Atualizado em: ${datetime(service.updatedAt)}</p>
-            </div>
-        </div>
-    `;
-
-    document.getElementById('modalFooter').innerHTML = `
-        <button class="btn btn-secondary" onclick="closeModal('serviceModal')">Fechar</button>
-    `;
-
+async function setStatus(id, patch) {
+    var res = await supabase.from('services').update(patch).eq('id', id).select().single();
+    if (res.error) { toast('Erro', res.error.message, 'error'); return null; }
+    var i = servicesCache.findIndex(function(x) { return x.id === id; });
+    if (i !== -1) servicesCache[i] = res.data;
+    renderAll();
+    return res.data;
+}
+function showServiceDetails(id) {
+    var s = null;
+    for (var i = 0; i < servicesCache.length; i++) {
+        if (servicesCache[i].id === id) { s = servicesCache[i]; break; }
+    }
+    if (!s) return;
+    var c = serviceClientName(s);
+    document.getElementById('modalTitle').textContent = 'Servico - ' + c.name;
+    var body = '<p><strong>Cliente:</strong> ' + esc(c.name) + ' (' + esc(c.phone || '-') + ')</p>'
+        + '<p><strong>Aparelho:</strong> ' + esc(s.device_type) + '</p>'
+        + '<p><strong>Problema:</strong> ' + esc(s.problem_type) + '</p>'
+        + '<p><strong>Total:</strong> ' + money(s.total_value) + ' | <strong>Sinal:</strong> ' + money(s.signal_value) + ' | <strong>Restante:</strong> ' + money(s.remaining_value) + '</p>'
+        + '<p><strong>Status:</strong> ' + badge(s.status) + '</p>'
+        + '<p class="text-muted">Criado: ' + datetime(s.created_at) + '</p>';
+    document.getElementById('modalBody').innerHTML = body;
+    var foot = '<button class="btn btn-secondary" onclick="closeModal(\'serviceModal\')">Fechar</button> ';
+    if (s.status === 'pending') foot += '<button class="btn btn-success" onclick="approveService(\'' + s.id + '\')">Aprovar (sinal pago)</button> ';
+    if (s.status === 'processing') foot += '<button class="btn btn-primary" onclick="markReady(\'' + s.id + '\')">Marcar pronto</button> ';
+    if (s.status === 'ready') foot += '<button class="btn btn-success" onclick="markComplete(\'' + s.id + '\')">Concluir (restante pago)</button> ';
+    document.getElementById('modalFooter').innerHTML = foot;
     document.getElementById('serviceModal').classList.add('active');
 }
-
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
+async function approveService(id) {
+    var s = await setStatus(id, { status: 'processing', signal_paid_at: new Date().toISOString() });
+    if (s) toast('Sinal confirmado', 'Servico em andamento.', 'success');
+    closeModal('serviceModal');
 }
 
-// Fechar modal ao clicar fora
-document.getElementById('serviceModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        this.classList.remove('active');
-    }
-});
+async function markReady(id) {
+    var s = await setStatus(id, { status: 'ready' });
+    if (!s) return;
+    var c = serviceClientName(s);
+    var n = document.getElementById('completedNotification');
+    n.style.display = 'block';
+    n.textContent = 'Aparelho pronto! Cliente: ' + c.name + ' - envie o link dos 50% finais.';
+    toast('Cliente avisado!', 'Link de ' + money(s.remaining_value) + ' pronto para envio.', 'success');
+    closeModal('serviceModal');
+}
 
-// ==================== INICIALIZAÇÃO ====================
+async function markComplete(id) {
+    var s = await setStatus(id, { status: 'completed', remaining_paid_at: new Date().toISOString(), completed_at: new Date().toISOString() });
+    if (s) toast('Servico concluido!', 'Pagamento final recebido.', 'success');
+    closeModal('serviceModal');
+}
 
-document.addEventListener('DOMContentLoaded', function() {
+async function deleteService(id) {
+    if (!confirm('Excluir este servico?')) return;
+    var res = await supabase.from('services').delete().eq('id', id);
+    if (res.error) { toast('Erro', res.error.message, 'error'); return; }
+    servicesCache = servicesCache.filter(function(x) { return x.id !== id; });
+    renderAll();
+    toast('Excluido', 'Servico removido.', 'info');
+}
+document.addEventListener('DOMContentLoaded', async function() {
     updateDate();
-    updateStats();
-    loadRecentClients();
-    loadServicesList();
-    loadHistoryTable();
-
-    // Atualizar data a cada minuto
-    setInterval(updateDate, 60000);
+    if (!supabase) { toast('Supabase nao configurado', 'Verifique auth.js', 'error'); return; }
+    var sess = await supabase.auth.getSession();
+    if (!sess.data.session) { window.location.href = 'login.html?next=index.html'; return; }
+    currentUser = sess.data.session.user;
+    var admin = false;
+    try {
+        var r = await supabase.rpc('current_user_is_admin');
+        admin = r.data === true;
+    } catch (e) { admin = false; }
+    if (!admin) {
+        document.getElementById('lockScreen').style.display = 'flex';
+        return;
+    }
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('adminApp').classList.remove('hidden');
+    await refreshAll();
 });

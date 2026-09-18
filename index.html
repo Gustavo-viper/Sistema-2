@@ -6,13 +6,30 @@
     <title>Assistência Técnica Gustavo & Emily</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .auth-btn-container { position: absolute; top: 1rem; right: 2rem; }
-        .auth-btn { background: var(--primary); color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; }
-        .auth-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
-        @media (max-width: 768px) { .auth-btn-container { position: static; text-align: center; margin-bottom: 1rem; } }
+        .header-actions { display: flex; align-items: center; gap: 1rem; }
+        .auth-btn { background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 600; white-space: nowrap; }
+        .auth-btn:hover { background: #1d4ed8; }
+        .lock-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #f0f4ff 0%, #e6edf7 100%); display: flex; align-items: center; justify-content: center; z-index: 5000; }
+        .lock-box { background: white; border-radius: 16px; padding: 2.5rem; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 25px rgba(0,0,0,0.1); }
+        .lock-box .logo-icon { width: 64px; height: 64px; margin: 0 auto 1rem; }
+        .lock-box h2 { margin: 0 0 0.5rem; }
+        .lock-box p { color: #6b7280; font-size: 0.9375rem; margin: 0 0 1.5rem; }
+        .hidden { display: none !important; }
+.normalize-search .search-input { margin-bottom: 0; }
     </style>
 </head>
 <body>
+    <!-- Bloqueio até confirmar login admin -->
+    <div class="lock-screen" id="lockScreen">
+        <div class="lock-box">
+            <div class="logo-icon">GE</div>
+            <h2>Área Restrita</h2>
+            <p>Faça login com a conta de administrador para acessar o painel.</p>
+            <a href="login.html?next=index.html" class="btn btn-primary btn-lg btn-block">Entrar como Admin</a>
+        </div>
+    </div>
+
+    <div id="adminApp" class="hidden">
     <header class="header">
         <a href="#" class="logo">
             <div class="logo-icon">GE</div>
@@ -21,13 +38,16 @@
                 <span>Celulares e Computadores</span>
             </div>
         </a>
-        <div class="header-date"><span id="currentDate"></span></div>
-        <div class="auth-btn-container">
-            <a href="login.html" class="auth-btn">🏠 Área do Cliente</a>
+        <div class="header-actions">
+            <div class="header-date"><span id="currentDate"></span></div>
+            <a href="client.html" class="auth-btn">👤 Meu Painel</a>
+            <button class="btn btn-secondary" onclick="logout()">Sair</button>
         </div>
     </header>
     <main class="container">
-        <section class="stats-grid" id="statsGrid"></section>
+        <section class="section" style="margin-bottom:2rem;">
+            <div class="stats-grid" id="statsGrid"></div>
+        </section>
         <div style="display:grid;grid-template-columns:1fr 350px;gap:2rem;">
             <section class="section">
                 <div class="section-header">
@@ -75,7 +95,7 @@
                                     <option value="Tela Manchas">Tela com Manchas</option>
                                     <option value="Display">Display Defeituoso</option>
                                 </optgroup>
-<optgroup label="Bateria">
+                                <optgroup label="Bateria">
                                     <option value="Bateria">Bateria Dura Pouco</option>
                                     <option value="Expandida">Bateria Expandida</option>
                                     <option value="Carrega">Não Carrega</option>
@@ -103,6 +123,30 @@
                         </div>
                     </div>
                     <div class="form-row">
+                        <div class="form-group"><label class="form-label">Modelo</label><input type="text" class="form-input" id="deviceModel" placeholder="Ex: iPhone 13..."></div>
+                        <div class="form-group"><label class="form-label">Valor Estimado</label><input type="number" class="form-input" id="estimatedValue" placeholder="R$ 0,00" min="0" step="0.01"><div class="form-hint">Preenchido automaticamente</div></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="observations" placeholder="Especificações adicionais..."></textarea></div>
+                    <div class="payment-section">
+                        <h4>Como funciona o pagamento:</h4>
+                        <div class="payment-link-box">
+                            <div class="payment-link-icon">💳</div>
+                            <div class="payment-link-info">
+                                <div class="payment-link-label"><strong>50%</strong> como <strong>sinal</strong> na aprovação do orçamento</div>
+                                <div class="payment-link-url">Link de pagamento será gerado automaticamente</div>
+                            </div>
+                        </div>
+                        <div class="payment-link-box">
+                            <div class="payment-link-icon">✅</div>
+                            <div class="payment-link-info">
+                                <div class="payment-link-label"><strong>50%</strong> restante no <strong>ato da entrega</strong> do aparelho</div>
+                                <div class="payment-link-url">Link será enviado quando o serviço for concluído</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBudgetBtn">Gerar Orçamento Automático</button>
+                </form>
+            </section>
             <section class="section">
                 <div class="section-header">
                     <div class="section-icon secondary">👥</div>
@@ -110,6 +154,9 @@
                 </div>
                 <button class="btn btn-sm btn-secondary" onclick="showAddClientForm()" style="margin-bottom:1rem;">+ Novo Cliente</button>
                 <div id="recentClients"></div>
+                <div id="noClientsMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum cliente cadastrado</p></div>
+            </section>
+        </div>
         <section class="section" style="margin-top:2rem;">
             <div class="section-header">
                 <div class="section-icon warning">⚡</div>
@@ -139,21 +186,6 @@
                         <tr>
                             <th>Cliente</th>
                             <th>Aparelho</th>
-    <div class="modal-overlay" id="serviceModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Detalhes do Serviço</h3>
-                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
-            </div>
-            <div class="modal-body" id="modalBody"></div>
-            <div class="modal-footer" id="modalFooter"></div>
-        </div>
-    </div>
-    <div class="completed-notification" id="completedNotification" style="display:none;"></div>
-    <div class="toast-container" id="toastContainer"></div>
-    <script src="script.js"></script>
-</body>
-</html>
                             <th>Problema</th>
                             <th>Orçamento</th>
                             <th>Sinal</th>
@@ -168,30 +200,22 @@
             <div id="noHistoryMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum serviço no histórico</p></div>
         </section>
     </main>
-                <div id="noClientsMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum cliente cadastrado</p></div>
-            </section>
+    </div>
+
+    <div class="modal-overlay" id="serviceModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Detalhes do Serviço</h3>
+                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer" id="modalFooter"></div>
         </div>
-                        <div class="form-group"><label class="form-label">Modelo</label><input type="text" class="form-input" id="deviceModel" placeholder="Ex: iPhone 13..."></div>
-                        <div class="form-group"><label class="form-label">Valor Estimado</label><input type="number" class="form-input" id="estimatedValue" placeholder="R$ 0,00" min="0" step="0.01"><div class="form-hint">Preenchido automaticamente</div></div>
-                    </div>
-                    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="observations" placeholder="Especificações adicionais..."></textarea></div>
-                    <div class="payment-section">
-                        <h4>Como funciona o pagamento:</h4>
-                        <div class="payment-link-box">
-                            <div class="payment-link-icon">💳</div>
-                            <div class="payment-link-info">
-                                <div class="payment-link-label"><strong>50%</strong> como <strong>sinal</strong> na aprovação do orçamento</div>
-                                <div class="payment-link-url">Link de pagamento será gerado automaticamente</div>
-                            </div>
-                        </div>
-                        <div class="payment-link-box">
-                            <div class="payment-link-icon">✅</div>
-                            <div class="payment-link-info">
-                                <div class="payment-link-label"><strong>50%</strong> restante no <strong>ato da entrega</strong> do aparelho</div>
-                                <div class="payment-link-url">Link será enviado quando o serviço for concluído</div>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBudgetBtn">Gerar Orçamento Automático</button>
-                </form>
-            </section>
+    </div>
+    <div class="completed-notification" id="completedNotification" style="display:none;"></div>
+    <div class="toast-container" id="toastContainer"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

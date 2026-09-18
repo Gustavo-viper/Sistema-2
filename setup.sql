@@ -1,16 +1,20 @@
 -- =========================================================
--- SISTEMA GUSTAVO & EMILY - SQL COMPLETO
--- Cole este arquivo inteiro no: SQL Editor do Supabase
--- (https://supabase.com/dashboard → seu projeto → SQL Editor → New query → Run)
+-- SISTEMA GUSTAVO & EMILY - SQL v2 (INTEGRAÇÃO COMPLETA)
+-- Cole no SQL Editor do Supabase e clique em Run.
+-- Pode rodar novamente a qualquer momento (é idempotente).
 -- =========================================================
 
--- ============ 1. TABELA PROFILES ============
-create table if not exists public.profiles (
-  id uuid references auth.users on delete cascade not null primary key,
-  name text,
-  phone text,
+-- ============ 1. TABELA CLIENTS (clientes da loja) ============
+-- Cadastrados pelo admin; clientes com conta ficam vinculados
+-- por auth_user_id e por phone.
+create table if not exists public.clients (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  phone text not null unique,
+  email text,
   address text,
   vip boolean default false,
+  auth_user_id uuid references auth.users on delete set null,
   created_at timestamptz default timezone('utc'::text, now()) not null,
   updated_at timestamptz default timezone('utc'::text, now()) not null
 );
@@ -18,7 +22,8 @@ create table if not exists public.profiles (
 -- ============ 2. TABELA SERVICES ============
 create table if not exists public.services (
   id uuid default gen_random_uuid() primary key,
-  client_id uuid references auth.users on delete cascade not null,
+  client_id uuid references public.clients on delete cascade not null,
+  client_user_id uuid references auth.users on delete set null,
   device_type text not null,
   device_model text,
   problem_type text not null,
@@ -39,9 +44,21 @@ create table if not exists public.services (
 );
 
 create index if not exists services_client_id_idx on public.services (client_id);
+create index if not exists services_client_user_idx on public.services (client_user_id);
 create index if not exists services_status_idx on public.services (status);
 
--- ============ 3. FUNÇÃO updated_at ============
+-- ============ 3. TABELA PROFILES (contas) ============
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade not null primary key,
+  name text,
+  phone text,
+  address text,
+  vip boolean default false,
+  created_at timestamptz default timezone('utc'::text, now()) not null,
+  updated_at timestamptz default timezone('utc'::text, now()) not null
+);
+
+-- ============ 4. TRIGGER updated_at ============
 create or replace function public.update_updated_at_column()
 returns trigger as $$
 begin
@@ -50,9 +67,9 @@ begin
 end;
 $$ language plpgsql security definer set search_path = public;
 
-drop trigger if exists update_profiles_updated_at on public.profiles;
-create trigger update_profiles_updated_at
-  before update on public.profiles
+drop trigger if exists update_clients_updated_at on public.clients;
+create trigger update_clients_updated_at
+  before update on public.clients
   for each row execute function public.update_updated_at_column();
 
 drop trigger if exists update_services_updated_at on public.services;
@@ -60,18 +77,45 @@ create trigger update_services_updated_at
   before update on public.services
   for each row execute function public.update_updated_at_column();
 
--- ============ 4. CRIAR PERFIL AUTOMATICAMENTE NO CADASTRO ============
--- (usa os dados enviados em user_metadata: name, phone)
+drop trigger if exists update_profiles_updated_at on public.profiles;
+create trigger update_profiles_updated_at
+  before update on public.profiles
+  for each row execute function public.update_updated_at_column();
+
+-- ============ 5. NOVO USUÁRIO → cria profile + vincula client ============
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  v_client_id uuid;
+  v_phone text;
+  v_name text;
 begin
+  v_name := coalesce(nullif(new.raw_user_meta_data->>'name',''), split_part(new.email,'@',1), 'Cliente');
+  v_phone := nullif(trim(coalesce(new.raw_user_meta_data->>'phone','')), '');
+
+  -- cria o profile da conta
   insert into public.profiles (id, name, phone)
-  values (
-    new.id,
-    new.raw_user_meta_data->>'name',
-    new.raw_user_meta_data->>'phone'
-  )
-  on conflict (id) do nothing;
+  values (new.id, v_name, v_phone)
+  on conflict (id) do update set name = excluded.name, phone = excluded.phone;
+
+  -- vincula (ou cria) o registro de cliente da loja pelo telefone
+  v_phone := new.raw_user_meta_data->>'phone';
+
+  if v_phone is not null and length(trim(v_phone)) > 0 then
+    select id into v_client_id from public.clients where phone = trim(v_phone) limit 1;
+
+    if v_client_id is not null then
+      update public.clients
+        set auth_user_id = new.id,
+            name = coalesce(nullif(new.raw_user_meta_data->>'name',''), name)
+        where id = v_client_id;
+    else
+      insert into public.clients (name, phone, auth_user_id)
+      values (coalesce(new.raw_user_meta_data->>'name', 'Cliente'), trim(v_phone), new.id)
+      returning id into v_client_id;
+    end if;
+  end if;
+
   return new;
 end;
 $$ language plpgsql security definer set search_path = public;
@@ -81,7 +125,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ============ 5. SINALIZAR ADMIN ============
+-- ============ 6. ADMIN ============
 -- Administradores do sistema (verificados por e-mail)
 create or replace function public.is_admin()
 returns boolean as $$
@@ -91,11 +135,18 @@ returns boolean as $$
   );
 $$ language sql stable security definer set search_path = public;
 
--- ============ 6. RLS (SEGURANÇA) ============
-alter table public.profiles enable row level security;
-alter table public.services enable row level security;
+-- RPC para o front-end saber se o usuário logado é admin
+create or replace function public.current_user_is_admin()
+returns boolean as $$
+  select public.is_admin();
+$$ language sql stable security definer set search_path = public;
 
--- Perfil: cada usuário vê e edita apenas o próprio
+-- ============ 7. RLS (SEGURANÇA) ============
+alter table public.clients enable row level security;
+alter table public.services enable row level security;
+alter table public.profiles enable row level security;
+
+-- --- profiles: cada conta vê/edita apenas o próprio ---
 drop policy if exists "Ver o proprio perfil" on public.profiles;
 create policy "Ver o proprio perfil"
   on public.profiles for select
@@ -111,33 +162,64 @@ create policy "Editar o proprio perfil"
   on public.profiles for update
   using (auth.uid() = id);
 
--- Serviços: cliente vê os dele; admin vê tudo e gerencia
-drop policy if exists "Cliente ve os proprios servicos" on public.services;
-create policy "Cliente ve os proprios servicos"
+-- --- clients: admin gerencia todos; cliente vê/edita o próprio ---
+drop policy if exists "Ver clientes" on public.clients;
+create policy "Ver clientes"
+  on public.clients for select
+  using (is_admin() or auth_user_id = auth.uid());
+
+drop policy if exists "Admin cadastra cliente" on public.clients;
+create policy "Admin cadastra cliente"
+  on public.clients for insert
+  with check (is_admin());
+
+drop policy if exists "Admin edita clientes" on public.clients;
+create policy "Admin edita clientes"
+  on public.clients for update
+  using (is_admin() or auth_user_id = auth.uid());
+
+drop policy if exists "Admin exclui clientes" on public.clients;
+create policy "Admin exclui clientes"
+  on public.clients for delete
+  using (is_admin());
+
+-- --- services: cliente ve os seus; admin ve/gerencia tudo ---
+-- (Cliente e vinculado por client_user_id OU pelo clients.auth_user_id)
+drop policy if exists "Ver servicos" on public.services;
+create policy "Ver servicos"
   on public.services for select
-  using (auth.uid() = client_id or is_admin());
+  using (
+    is_admin()
+    or client_user_id = auth.uid()
+    or exists (
+      select 1 from public.clients c
+      where c.id = client_id and c.auth_user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "Admin cria servicos" on public.services;
 create policy "Admin cria servicos"
   on public.services for insert
   with check (is_admin());
 
-drop policy if exists "Admin atualiza servicos" on public.services;
-create policy "Admin atualiza servicos"
+drop policy if exists "Atualizar servicos" on public.services;
+create policy "Atualizar servicos"
   on public.services for update
-  using (auth.uid() = client_id or is_admin());
+  using (
+    is_admin()
+    or client_user_id = auth.uid()
+    or exists (
+      select 1 from public.clients c
+      where c.id = client_id and c.auth_user_id = auth.uid()
+    )
+  );
 
-drop policy if exists "Cliente paga sinal e avalia" on public.services;
-create policy "Cliente paga sinal e avalia"
-  on public.services for update
-  using (auth.uid() = client_id);
-
-drop policy if exists "Admin cancela servicos" on public.services;
-create policy "Admin cancela servicos"
+drop policy if exists "Admin exclui servicos" on public.services;
+create policy "Admin exclui servicos"
   on public.services for delete
   using (is_admin());
 
 -- =========================================================
--- FIM - Após rodar, cadastre um cliente pelo site (login.html)
--- e o perfil será criado automaticamente!
+-- FIM - Execute "Run" no SQL Editor.
+-- Depois: cadastre clientes no painel admin e crie orçamentos.
 -- =========================================================

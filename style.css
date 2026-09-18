@@ -282,6 +282,19 @@ body {
     align-items: flex-start;
     margin-bottom: 1rem;
 }
+.service-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+.service-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
 .service-customer {
     display: flex;
     align-items: center;
