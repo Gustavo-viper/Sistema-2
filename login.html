@@ -1,92 +1,77 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Assistência Técnica Gustavo & Emily</title>
-    <link rel="stylesheet" href="style.css">
-    <style>
-        .login-container { max-width: 400px; margin: 4rem auto; }
-        .login-box { background: white; border-radius: 16px; padding: 2.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .login-logo { text-align: center; margin-bottom: 2rem; }
-        .login-logo .logo-icon { width: 80px; height: 80px; margin: 0 auto 1rem; }
-        .login-logo h1 { font-size: 1.5rem; }
-        .login-logo span { color: #6b7280; }
-        .auth-tabs { display: flex; margin-bottom: 2rem; background: #f3f4f6; border-radius: 8px; padding: 0.25rem; }
-        .auth-tab { flex: 1; padding: 0.75rem; text-align: center; border: none; background: transparent; cursor: pointer; font-weight: 600; color: #6b7280; border-radius: 6px; transition: all 0.3s ease; }
-        .auth-tab.active { background: white; color: #1e293b; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .auth-form { display: none; }
-        .auth-form.active { display: block; }
-        .switch-auth { text-align: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; }
-        .switch-auth a { color: #2563eb; text-decoration: none; font-weight: 600; }
-        .switch-auth a:hover { text-decoration: underline; }
-        .forgot-password { text-align: right; margin-bottom: 1rem; }
-        .forgot-password a { color: #6b7280; font-size: 0.875rem; }
-        .forgot-password a:hover { color: #2563eb; }
-        @media (max-width: 480px) { .login-container { margin: 2rem auto; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Assistencia Tecnica Gustavo e Emily</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.login-container{max-width:420px;margin:3rem auto;padding:0 1rem}
+.login-box{background:#fff;border-radius:16px;padding:2rem;box-shadow:0 10px 25px rgba(0,0,0,.1)}
+.login-logo{text-align:center;margin-bottom:1.5rem}
+.auth-tabs{display:flex;background:#f3f4f6;border-radius:8px;padding:.25rem;margin-bottom:1.5rem}
+.auth-tab{flex:1;padding:.7rem;border:none;background:transparent;cursor:pointer;font-weight:700;color:#6b7280;border-radius:6px}
+.auth-tab.active{background:#fff;color:#1e293b;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+.auth-form{display:none}
+.auth-form.active{display:block}
+.switch-auth{text-align:center;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #e5e7eb}
+.switch-auth a{color:#2563eb;font-weight:700;text-decoration:none}
+</style>
 </head>
 <body>
-    <div class="login-container">
-        <div class="login-box">
-            <div class="login-logo">
-                <div class="logo-icon">GE</div>
-                <h1>Assistência Técnica</h1>
-                <span>Já tem conta? Faça login</span>
-            </div>
-            
-            <div class="auth-tabs">
-                <button type="button" class="auth-tab active" onclick="switchTab('login')">Login</button>
-                <button type="button" class="auth-tab" onclick="switchTab('register')">Criar Conta</button>
-            </div>
-            
-            <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <label class="form-label">E-mail</label>
-                    <input type="email" class="form-input" id="loginEmail" placeholder="seu@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Senha</label>
-                    <input type="password" class="form-input" id="loginPassword" placeholder="Sua senha" required>
-                </div>
-                <div class="forgot-password">
-                    <a href="#" onclick="showForgotPassword()">Esqueceu a senha?</a>
-                </div>
-                <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">Entrar</button>
-            </form>
-            
-            <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
-                <div class="form-group">
-                    <label class="form-label">Nome Completo</label>
-                    <input type="text" class="form-input" id="registerName" placeholder="Seu nome completo" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">E-mail</label>
-                    <input type="email" class="form-input" id="registerEmail" placeholder="seu@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Telefone</label>
-                    <input type="tel" class="form-input" id="registerPhone" placeholder="(00) 00000-0000">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Senha</label>
-                    <input type="password" class="form-input" id="registerPassword" placeholder="Mínimo 6 caracteres" required minlength="6">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Confirmar Senha</label>
-                    <input type="password" class="form-input" id="registerConfirm" placeholder="Repita a senha" required>
-                </div>
-                <button type="submit" class="btn btn-success btn-lg btn-block" id="registerBtn">Criar Conta</button>
-            </form>
-            
-            <div class="switch-auth">
-                <span id="switchText">Não tem conta? <a href="#" onclick="switchTab('register')">Criar conta</a></span>
-            </div>
-        </div>
-    </div>
-    
-    <div class="toast-container" id="toastContainer"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js"></script>
+<div class="login-container">
+<div class="login-box">
+<div class="login-logo"><div class="logo-icon">GE</div><h1>Assistencia Tecnica</h1><p style="color:#6b7280">Area do cliente e do admin</p></div>
+<div class="auth-tabs">
+<button type="button" class="auth-tab active" id="tabLoginBtn">Entrar</button>
+<button type="button" class="auth-tab" id="tabRegisterBtn">Criar Conta</button>
+</div>
+<form class="auth-form active" id="loginForm">
+<div class="form-group"><label class="form-label">E-mail</label><input type="email" class="form-input" id="loginEmail" required></div>
+<div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="loginPassword" required></div>
+<button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">Entrar</button>
+<p style="text-align:center;margin-top:.8rem"><a href="#" id="forgotLink" style="color:#6b7280;font-size:.85rem">Esqueceu a senha?</a></p>
+</form>
+<form class="auth-form" id="registerForm">
+<div class="form-group"><label class="form-label">Nome Completo</label><input type="text" class="form-input" id="registerName" required></div>
+<div class="form-group"><label class="form-label">E-mail</label><input type="email" class="form-input" id="registerEmail" required></div>
+<div class="form-group"><label class="form-label">Telefone</label><input type="tel" class="form-input" id="registerPhone" placeholder="(00) 00000-0000"></div>
+<div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="registerPassword" minlength="6" required></div>
+<div class="form-group"><label class="form-label">Confirmar Senha</label><input type="password" class="form-input" id="registerConfirm" required></div>
+<button type="submit" class="btn btn-success btn-lg btn-block" id="registerBtn">Criar Conta</button>
+</form>
+<div class="switch-auth"><span id="switchText">Nao tem conta? <a href="#" id="switchLink">Criar conta</a></span></div>
+<div style="text-align:center;margin-top:1rem"><a href="index.html" style="color:#6b7280;font-size:.85rem">Voltar ao inicio</a></div>
+</div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script>
+(function(){
+function show(which){
+var isLogin = which==='login';
+document.getElementById('tabLoginBtn').classList.toggle('active',isLogin);
+document.getElementById('tabRegisterBtn').classList.toggle('active',!isLogin);
+document.getElementById('loginForm').classList.toggle('active',isLogin);
+document.getElementById('registerForm').classList.toggle('active',!isLogin);
+document.getElementById('switchText').innerHTML = isLogin ? 'Nao tem conta? <a href="#" id="switchLink">Criar conta</a>' : 'Ja tem conta? <a href="#" id="switchLink">Fazer login</a>';
+bind();
+}
+function bind(){
+var l=document.getElementById('switchLink');
+if(l) l.onclick=function(e){e.preventDefault();show(document.getElementById('loginForm').classList.contains('active')?'register':'login');};
+}
+document.getElementById('tabLoginBtn').onclick=function(){show('login');};
+document.getElementById('tabRegisterBtn').onclick=function(){show('register');};
+bind();
+document.getElementById('loginForm').onsubmit=function(e){if(typeof handleLogin==='function')handleLogin(e);else{e.preventDefault();alert('auth.js nao carregou. Recarregue a pagina.');}};
+document.getElementById('registerForm').onsubmit=function(e){if(typeof handleRegister==='function')handleRegister(e);else{e.preventDefault();alert('auth.js nao carregou. Recarregue a pagina.');}};
+document.getElementById('forgotLink').onclick=function(e){e.preventDefault();if(typeof showForgotPassword==='function')showForgotPassword();};
+window.switchTab=show;
+var p=new URLSearchParams(window.location.search).get('tab');
+if(p==='register') show('register');
+})();
+</script>
 </body>
 </html>
