@@ -82,43 +82,28 @@ create trigger update_profiles_updated_at
   before update on public.profiles
   for each row execute function public.update_updated_at_column();
 
--- ============ 5. NOVO USUÁRIO → cria profile + vincula client ============
+-- ============ 5. NOVO USUARIO: cria profile + vincula client ============
+-- Trigger simples: cria o profile. O vinculo com clients e feito por
+-- auth_user_id (admin cadastra com o e-mail) ou pelo telefone.
 create or replace function public.handle_new_user()
-returns trigger as $$
-declare
-  v_client_id uuid;
-  v_phone text;
-  v_name text;
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $func$
 begin
-  v_name := coalesce(nullif(new.raw_user_meta_data->>'name',''), split_part(new.email,'@',1), 'Cliente');
-  v_phone := nullif(trim(coalesce(new.raw_user_meta_data->>'phone','')), '');
-
-  -- cria o profile da conta
   insert into public.profiles (id, name, phone)
-  values (new.id, v_name, v_phone)
-  on conflict (id) do update set name = excluded.name, phone = excluded.phone;
-
-  -- vincula (ou cria) o registro de cliente da loja pelo telefone
-  v_phone := new.raw_user_meta_data->>'phone';
-
-  if v_phone is not null and length(trim(v_phone)) > 0 then
-    select id into v_client_id from public.clients where phone = trim(v_phone) limit 1;
-
-    if v_client_id is not null then
-      update public.clients
-        set auth_user_id = new.id,
-            name = coalesce(nullif(new.raw_user_meta_data->>'name',''), name)
-        where id = v_client_id;
-    else
-      insert into public.clients (name, phone, auth_user_id)
-      values (coalesce(new.raw_user_meta_data->>'name', 'Cliente'), trim(v_phone), new.id)
-      returning id into v_client_id;
-    end if;
-  end if;
-
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'name', split_part(new.email, '@', 1)),
+    nullif(new.raw_user_meta_data ->> 'phone', '')
+  )
+  on conflict (id) do update
+    set name = excluded.name,
+        phone = coalesce(excluded.phone, public.profiles.phone);
   return new;
 end;
-$$ language plpgsql security definer set search_path = public;
+$func$;
 
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created

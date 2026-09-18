@@ -1,5 +1,5 @@
 var _supLib = (typeof window !== 'undefined') ? window.supabase : null;
-var SUPABASE_URL = 'https://ytghpftgeqnadecxsxgg.supabaseClient.co';
+var SUPABASE_URL = 'https://ytghpftgeqnadecxsxgg.supabase.co';
 var SUPABASE_ANON_KEY = 'sb_publishable_N9FjpZBFCsWEiDNMF72eag_NpoDSKsI';
 var currentUser = null;
 var userProfile = null;
@@ -102,9 +102,24 @@ async function handleRegister(e) {
   if (pass !== conf) { toastSafe('Atenção', 'Senhas não conferem', 'warning'); return; }
   var btn = document.getElementById('registerBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
-  var res = await supabaseClient.auth.signUp({ email: email, password: pass, options: { data: { name: name, phone: phone } } });
+  console.log('[register] tentando criar conta:', email);
+  var res;
+  try {
+    res = await supabaseClient.auth.signUp({ email: email, password: pass, options: { data: { name: name, phone: phone } } });
+  } catch (err) {
+    console.error('[register] excecao:', err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
+    toastSafe('Erro ao criar conta', String(err && err.message || err), 'error');
+    return;
+  }
+  console.log('[register] resposta:', JSON.stringify(res));
   if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
-  if (res.error) { toastSafe('Erro ao criar conta', res.error.message, 'error'); return; }
+  if (res.error) {
+    console.error('[register] erro supabase:', res.error);
+    toastSafe('Erro ao criar conta (' + (res.error.status || '?') + ')', res.error.message, 'error');
+    alert('Erro ao criar conta: ' + res.error.message);
+    return;
+  }
   if (res.data.session) {
     toastSafe('Conta criada!', 'Bem-vindo, ' + name, 'success');
     await afterLogin();
