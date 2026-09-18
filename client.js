@@ -3,7 +3,7 @@
 // Inicialização
 document.addEventListener('DOMContentLoaded', async function() {
     if (!supabase) { redirectToLogin(); return; }
-    var sess = await supabase.auth.getSession();
+    var sess = await supabaseClient.auth.getSession();
     if (!sess.data.session) { redirectToLogin(); return; }
     currentUser = sess.data.session.user;
     await loadUserProfile();
@@ -42,7 +42,7 @@ function formatDateTime(date) {
 
 async function myClientId() {
     try {
-        var r = await supabase.from('clients').select('id').eq('auth_user_id', currentUser.id).limit(1).maybeSingle();
+        var r = await supabaseClient.from('clients').select('id').eq('auth_user_id', currentUser.id).limit(1).maybeSingle();
         if (r.data && r.data.id) return r.data.id;
     } catch (e) {}
     return null;
@@ -54,7 +54,7 @@ async function loadMyServices() {
     var noMsg = document.getElementById('noServicesClient');
     if (!servicesList) return;
     var myId = await myClientId();
-    var q = supabase.from('services').select('*').neq('status', 'cancelled').order('created_at', { ascending: false });
+    var q = supabaseClient.from('services').select('*').neq('status', 'cancelled').order('created_at', { ascending: false });
     if (myId) q = q.eq('client_id', myId);
     else q = q.eq('client_user_id', currentUser.id);
     var res = await q;
@@ -85,7 +85,7 @@ async function loadClientHistory() {
     var noMsg = document.getElementById('noHistoryClient');
     if (!tbody) return;
     var myId = await myClientId();
-    var q = supabase.from('services').select('*').order('created_at', { ascending: false });
+    var q = supabaseClient.from('services').select('*').order('created_at', { ascending: false });
     if (myId) q = q.eq('client_id', myId);
     else q = q.eq('client_user_id', currentUser.id);
     var res = await q;

@@ -538,7 +538,7 @@ function loadHistoryTable() {
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
 async function setStatus(id, patch) {
-    var res = await supabase.from('services').update(patch).eq('id', id).select().single();
+    var res = await supabaseClient.from('services').update(patch).eq('id', id).select().single();
     if (res.error) { toast('Erro', res.error.message, 'error'); return null; }
     var i = servicesCache.findIndex(function(x) { return x.id === id; });
     if (i !== -1) servicesCache[i] = res.data;
@@ -592,7 +592,7 @@ async function markComplete(id) {
 
 async function deleteService(id) {
     if (!confirm('Excluir este servico?')) return;
-    var res = await supabase.from('services').delete().eq('id', id);
+    var res = await supabaseClient.from('services').delete().eq('id', id);
     if (res.error) { toast('Erro', res.error.message, 'error'); return; }
     servicesCache = servicesCache.filter(function(x) { return x.id !== id; });
     renderAll();
@@ -601,12 +601,12 @@ async function deleteService(id) {
 document.addEventListener('DOMContentLoaded', async function() {
     updateDate();
     if (!supabase) { toast('Supabase nao configurado', 'Verifique auth.js', 'error'); return; }
-    var sess = await supabase.auth.getSession();
+    var sess = await supabaseClient.auth.getSession();
     if (!sess.data.session) { window.location.href = 'login.html?next=index.html'; return; }
     currentUser = sess.data.session.user;
     var admin = false;
     try {
-        var r = await supabase.rpc('current_user_is_admin');
+        var r = await supabaseClient.rpc('current_user_is_admin');
         admin = r.data === true;
     } catch (e) { admin = false; }
     if (!admin) {
