@@ -62,6 +62,7 @@ async function handleLogin(event) {
     }
     
     try {
+        console.log('[handleRegister] enviando para Supabase...');
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         if (data.user) {
@@ -77,7 +78,12 @@ async function handleLogin(event) {
 
 // Registro
 async function handleRegister(event) {
-    event.preventDefault();
+    if (event) event.preventDefault();
+    console.log('[handleRegister] chamado');
+    if (!supabase) {
+        toast('Erro', 'Sistema não configurado (supabase indisponível)', 'error');
+        return;
+    }
     const name = document.getElementById('registerName').value.trim();
     const email = document.getElementById('registerEmail').value.trim();
     const phone = document.getElementById('registerPhone').value.trim();
@@ -99,7 +105,14 @@ async function handleRegister(event) {
         return;
     }
     
+    if (typeof supabase === 'undefined' || !supabase) {
+        toast('Sistema nao configurado', 'Recarregue a pagina e verifique a internet (CDN do Supabase).', 'error');
+        return;
+    }
+    const btn = document.getElementById('registerBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
     try {
+        console.log('[handleRegister] enviando para Supabase...');
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
@@ -117,6 +130,9 @@ async function handleRegister(event) {
         }
     } catch (error) {
         toast('Erro no registro', error.message || 'Não foi possível criar a conta', 'error');
+    } finally {
+        const b2 = document.getElementById('registerBtn');
+        if (b2) { b2.disabled = false; b2.textContent = 'Criar Conta'; }
     }
 }
 // Carregar perfil do usuário
@@ -202,6 +218,7 @@ function redirectToLogin(nextPage) {
 async function isAdminUser() {
     if (!currentUser || !supabase) return false;
     try {
+        console.log('[handleRegister] enviando para Supabase...');
         const { data, error } = await supabase.rpc('current_user_is_admin');
         if (error) return false;
         return data === true;

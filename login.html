@@ -36,8 +36,8 @@
             </div>
             
             <div class="auth-tabs">
-                <button class="auth-tab active" onclick="switchTab('login')">Login</button>
-                <button class="auth-tab" onclick="switchTab('register')">Criar Conta</button>
+                <button type="button" class="auth-tab active" onclick="switchTab('login')">Login</button>
+                <button type="button" class="auth-tab" onclick="switchTab('register')">Criar Conta</button>
             </div>
             
             <form class="auth-form active" id="loginForm" onsubmit="handleLogin(event)">
@@ -52,7 +52,7 @@
                 <div class="forgot-password">
                     <a href="#" onclick="showForgotPassword()">Esqueceu a senha?</a>
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar</button>
+                <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">Entrar</button>
             </form>
             
             <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
@@ -76,7 +76,7 @@
                     <label class="form-label">Confirmar Senha</label>
                     <input type="password" class="form-input" id="registerConfirm" placeholder="Repita a senha" required>
                 </div>
-                <button type="submit" class="btn btn-success btn-lg btn-block">Criar Conta</button>
+                <button type="submit" class="btn btn-success btn-lg btn-block" id="registerBtn">Criar Conta</button>
             </form>
             
             <div class="switch-auth">
