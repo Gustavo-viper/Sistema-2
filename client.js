@@ -1,9 +1,11 @@
-    
+
 /* =====================================================
    GUSTAVO & EMILY - ASSISTÊNCIA TÉCNICA
    CLIENT.JS - PAINEL DO CLIENTE
-   VERSÃO CORRIGIDA E SEGURA
+   VERSÃO REVISADA
 ===================================================== */
+
+'use strict';
 
 /* =====================================================
    INICIALIZAÇÃO
@@ -15,25 +17,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             redirectToLogin();
             return;
         }
-        
-        const budgetRequestForm = document.getElementById('budgetRequestForm');
 
-if (budgetRequestForm) {
-    budgetRequestForm.addEventListener(
-        'submit',
-        submitBudgetRequest
-    );
-}
+        const sessionValid = await ensureClientSession();
 
-        const { data, error } =
-            await supabaseClient.auth.getSession();
+        if (!sessionValid) return;
 
-        if (error || !data?.session) {
-            redirectToLogin();
-            return;
+        const form = document.getElementById('budgetRequestForm');
+
+        if (form) {
+            form.addEventListener('submit', submitBudgetRequest);
         }
-
-        currentUser = data.session.user;
 
         await loadUserProfile();
         await loadProfile();
@@ -43,7 +36,7 @@ if (budgetRequestForm) {
     } catch (error) {
         console.error('Erro ao iniciar painel:', error);
 
-        toastSafe(
+        notify(
             'Erro',
             'Não foi possível carregar o painel.',
             'error'
@@ -52,29 +45,56 @@ if (budgetRequestForm) {
 });
 
 /* =====================================================
-   VERIFICAR AUTENTICAÇÃO
+   NOTIFICAÇÕES
 ===================================================== */
 
-async function ensureClientSession() {
-    if (!supabaseClient) {
-        redirectToLogin();
-        return false;
+function notify(title, message, type = 'info') {
+    if (typeof window.toastSafe === 'function') {
+        window.toastSafe(title, message, type);
+        return;
     }
 
-    const { data, error } =
-        await supabaseClient.auth.getSession();
-
-    if (error || !data?.session) {
-        redirectToLogin();
-        return false;
+    if (typeof window.toast === 'function') {
+        window.toast(title, message, type);
+        return;
     }
 
-    currentUser = data.session.user;
-    return true;
+    console.log(`${title}: ${message}`);
 }
 
 /* =====================================================
-   CARREGAR PERFIL
+   SESSÃO DO CLIENTE
+===================================================== */
+
+async function ensureClientSession() {
+    if (!window.supabaseClient) {
+        redirectToLogin();
+        return false;
+    }
+
+    try {
+        const { data, error } =
+            await window.supabaseClient.auth.getSession();
+
+        if (error || !data?.session?.user) {
+            redirectToLogin();
+            return false;
+        }
+
+        window.currentUser = data.session.user;
+
+        return true;
+
+    } catch (error) {
+        console.error('Erro ao verificar sessão:', error);
+
+        redirectToLogin();
+        return false;
+    }
+}
+
+/* =====================================================
+   CARREGAR PERFIL NA TELA
 ===================================================== */
 
 async function loadProfile() {
@@ -84,20 +104,25 @@ async function loadProfile() {
 
     if (!name || !email) return;
 
+    const user = window.currentUser;
+    const profile = window.userProfile;
+
     const profileName =
-        userProfile?.name ||
-        userProfile?.full_name ||
-        currentUser?.user_metadata?.name ||
-        currentUser?.email ||
+        profile?.name ||
+        profile?.full_name ||
+        user?.user_metadata?.name ||
+        user?.email ||
         'Cliente';
 
     if (avatar) {
-        avatar.textContent =
-            profileName.charAt(0).toUpperCase();
+        avatar.textContent = profileName
+            .trim()
+            .charAt(0)
+            .toUpperCase() || '👤';
     }
 
     name.textContent = profileName;
-    email.textContent = currentUser?.email || '';
+    email.textContent = user?.email || '';
 }
 
 /* =====================================================
@@ -109,13 +134,9 @@ function formatDate(date) {
 
     const parsed = new Date(date);
 
-    if (isNaN(parsed.getTime())) return '-';
+    if (Number.isNaN(parsed.getTime())) return '-';
 
-    return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    }).format(parsed);
+    return new Intl.DateTimeFormat('pt-BR').format(parsed);
 }
 
 function formatDateTime(date) {
@@ -123,14 +144,11 @@ function formatDateTime(date) {
 
     const parsed = new Date(date);
 
-    if (isNaN(parsed.getTime())) return '-';
+    if (Number.isNaN(parsed.getTime())) return '-';
 
     return new Intl.DateTimeFormat('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        dateStyle: 'short',
+        timeStyle: 'short'
     }).format(parsed);
 }
 
@@ -162,9 +180,9 @@ function escapeHTML(value) {
 
 function getStatusLabel(status) {
     const labels = {
-        pending: 'Aguardando Sinal',
-        processing: 'Em Andamento',
-        ready: 'Pronto para Entrega',
+        pending: 'Aguardando sinal',
+        processing: 'Em andamento',
+        ready: 'Pronto para entrega',
         completed: 'Concluído',
         cancelled: 'Cancelado'
     };
@@ -173,6 +191,14 @@ function getStatusLabel(status) {
 }
 
 function getStatusBadge(status) {
+    const labels = {
+        pending: '⏳ Aguardando',
+        processing: '⚙️ Em andamento',
+        ready: '✓ Pronto',
+        completed: '✓ Concluído',
+        cancelled: '✗ Cancelado'
+    };
+
     const classes = {
         pending: 'badge-pending',
         processing: 'badge-processing',
@@ -181,35 +207,30 @@ function getStatusBadge(status) {
         cancelled: 'badge-cancelled'
     };
 
-    const labels = {
-        pending: '⏳ Aguardando',
-        processing: '⚙️ Em Andamento',
-        ready: '✓ Pronto',
-        completed: '✓ Concluído',
-        cancelled: '✗ Cancelado'
-    };
-
     return `
-        <span class="badge ${classes[status] || 'badge-completed'}">
+        <span class="badge ${escapeHTML(
+            classes[status] || 'badge-completed'
+        )}">
             ${escapeHTML(labels[status] || status || 'Desconhecido')}
         </span>
     `;
 }
 
 /* =====================================================
-   OBTER ID DO CLIENTE
+   IDENTIFICAR CLIENTE
 ===================================================== */
 
 async function myClientId() {
-    if (!supabaseClient || !currentUser) {
-        return null;
-    }
+    const client = window.supabaseClient;
+    const user = window.currentUser;
+
+    if (!client || !user) return null;
 
     try {
-        const { data, error } = await supabaseClient
+        const { data, error } = await client
             .from('clients')
             .select('id')
-            .eq('auth_user_id', currentUser.id)
+            .eq('auth_user_id', user.id)
             .maybeSingle();
 
         if (error) {
@@ -220,90 +241,81 @@ async function myClientId() {
         return data?.id || null;
 
     } catch (error) {
-        console.error('Erro inesperado ao buscar cliente:', error);
+        console.error('Erro inesperado:', error);
         return null;
     }
 }
 
 /* =====================================================
-   CONSULTAR SERVIÇOS DO CLIENTE
+   SERVIÇOS DO CLIENTE
 ===================================================== */
 
 async function getMyServices() {
-    if (!supabaseClient || !currentUser) {
-        return [];
-    }
+    const client = window.supabaseClient;
+    const user = window.currentUser;
 
-    const myId = await myClientId();
+    if (!client || !user) return [];
 
-    let query = supabaseClient
+    const clientId = await myClientId();
+
+    /*
+      A estrutura abaixo utiliza client_id quando existe
+      um cadastro correspondente na tabela clients.
+
+      O esquema definitivo deve ser confirmado no SQL.
+    */
+
+    let query = client
         .from('services')
         .select('*')
         .order('created_at', { ascending: false });
 
-    /*
-      O filtro abaixo pressupõe que a tabela services
-      tenha client_id ou client_user_id configurado.
-
-      As políticas RLS do Supabase devem garantir que
-      o cliente só veja os próprios serviços.
-    */
-
-    if (myId) {
-        query = query.eq('client_id', myId);
+    if (clientId) {
+        query = query.eq('client_id', clientId);
     } else {
-        query = query.eq('client_user_id', currentUser.id);
+        query = query.eq('client_user_id', user.id);
     }
 
     const { data, error } = await query;
 
-    if (error) {
-        throw error;
-    }
+    if (error) throw error;
 
     return data || [];
 }
 
 /* =====================================================
-   CARREGAR SERVIÇOS EM ANDAMENTO
+   SERVIÇOS EM ANDAMENTO
 ===================================================== */
 
 async function loadMyServices() {
     const list = document.getElementById('myServicesList');
-    const noMessage = document.getElementById('noServicesClient');
+    const empty = document.getElementById('noServicesClient');
 
     if (!list) return;
 
     try {
         const services = await getMyServices();
 
-        const activeServices = services.filter(service =>
-            service.status !== 'cancelled' &&
-            service.status !== 'completed'
+        const active = services.filter(service =>
+            !['cancelled', 'completed'].includes(service.status)
         );
 
-        if (!activeServices.length) {
-            list.innerHTML = '';
-
-            if (noMessage) {
-                noMessage.style.display = 'block';
-            }
-
-            return;
-        }
-
-        if (noMessage) {
-            noMessage.style.display = 'none';
-        }
-
-        list.innerHTML = activeServices
-            .map(service => renderServiceCard(service))
+        list.innerHTML = active
+            .map(renderServiceCard)
             .join('');
+
+        if (empty) {
+            empty.style.display = active.length ? 'none' : 'block';
+        }
 
     } catch (error) {
         console.error('Erro ao carregar serviços:', error);
 
-        toastSafe(
+        list.innerHTML = '';
+
+        if (empty) empty.style.display = 'block';
+
+        notify(
             'Erro',
             'Não foi possível carregar seus serviços.',
             'error'
@@ -312,7 +324,7 @@ async function loadMyServices() {
 }
 
 /* =====================================================
-   RENDERIZAR CARTÃO DE SERVIÇO
+   CARTÃO DE SERVIÇO
 ===================================================== */
 
 function renderServiceCard(service) {
@@ -331,23 +343,15 @@ function renderServiceCard(service) {
         service.problem_type || 'Problema não informado'
     );
 
-    const total = formatMoney(service.total_value);
-    const remaining = formatMoney(service.remaining_value);
-
     let buttons = '';
-
-    /*
-      Os botões de pagamento apenas solicitam o pagamento.
-      A confirmação deve ocorrer por um backend ou webhook
-      confiável do provedor de pagamentos.
-    */
 
     if (status === 'pending') {
         buttons += `
             <button
+                type="button"
                 class="btn btn-success btn-sm"
                 onclick="paySignal('${id}')">
-                Pagar Sinal
+                Pagar sinal
             </button>
         `;
     }
@@ -355,9 +359,10 @@ function renderServiceCard(service) {
     if (status === 'ready') {
         buttons += `
             <button
+                type="button"
                 class="btn btn-success btn-sm"
                 onclick="payRemaining('${id}')">
-                Pagar Restante
+                Pagar restante
             </button>
         `;
     }
@@ -365,6 +370,7 @@ function renderServiceCard(service) {
     if (status === 'completed') {
         buttons += `
             <button
+                type="button"
                 class="btn btn-secondary btn-sm"
                 onclick="rateService('${id}')">
                 Avaliar
@@ -374,6 +380,7 @@ function renderServiceCard(service) {
 
     buttons += `
         <button
+            type="button"
             class="btn btn-secondary btn-sm"
             onclick="showServiceDetails('${id}')">
             Detalhes
@@ -383,25 +390,25 @@ function renderServiceCard(service) {
     return `
         <article class="service-item-client ${escapeHTML(status)}">
 
-            <div>
-                <h3>${device}${model}</h3>
-                <p class="text-muted">${problem}</p>
-                <p>${getStatusBadge(status)}</p>
-            </div>
+            <h3>${device}${model}</h3>
+
+            <p class="text-muted">${problem}</p>
+
+            <p>${getStatusBadge(status)}</p>
 
             <div class="service-details">
 
                 <div class="service-detail-item">
                     <div class="service-detail-label">Total</div>
                     <div class="service-detail-value">
-                        ${total}
+                        ${formatMoney(service.total_value)}
                     </div>
                 </div>
 
                 <div class="service-detail-item">
                     <div class="service-detail-label">Restante</div>
                     <div class="service-detail-value small">
-                        ${remaining}
+                        ${formatMoney(service.remaining_value)}
                     </div>
                 </div>
 
@@ -410,7 +417,7 @@ function renderServiceCard(service) {
             <div style="
                 margin-top: 1rem;
                 display: flex;
-                gap: 0.5rem;
+                gap: .5rem;
                 flex-wrap: wrap;
             ">
                 ${buttons}
@@ -421,66 +428,59 @@ function renderServiceCard(service) {
 }
 
 /* =====================================================
-   CARREGAR HISTÓRICO
+   HISTÓRICO
 ===================================================== */
 
 async function loadClientHistory() {
     const tbody = document.getElementById('clientHistoryBody');
-    const noMessage = document.getElementById('noHistoryClient');
+    const empty = document.getElementById('noHistoryClient');
 
     if (!tbody) return;
 
     try {
         const services = await getMyServices();
 
-        if (!services.length) {
-            tbody.innerHTML = '';
+        tbody.innerHTML = services.map(service => `
+            <tr>
+                <td>${escapeHTML(formatDate(service.created_at))}</td>
 
-            if (noMessage) {
-                noMessage.style.display = 'block';
-            }
+                <td>${escapeHTML(service.device_type || '-')}</td>
 
-            return;
+                <td>${escapeHTML(service.problem_type || '-')}</td>
+
+                <td>
+                    <strong>
+                        ${formatMoney(service.total_value)}
+                    </strong>
+                </td>
+
+                <td>
+                    ${getStatusBadge(service.status)}
+                </td>
+
+                <td>
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-secondary"
+                        onclick="showServiceDetails('${escapeHTML(service.id)}')">
+                        Ver
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        if (empty) {
+            empty.style.display = services.length ? 'none' : 'block';
         }
-
-        if (noMessage) {
-            noMessage.style.display = 'none';
-        }
-
-        tbody.innerHTML = services
-            .map(service => `
-                <tr>
-                    <td>${escapeHTML(formatDate(service.created_at))}</td>
-
-                    <td>${escapeHTML(service.device_type || '-')}</td>
-
-                    <td>${escapeHTML(service.problem_type || '-')}</td>
-
-                    <td>
-                        <strong>
-                            ${formatMoney(service.total_value)}
-                        </strong>
-                    </td>
-
-                    <td>
-                        ${getStatusBadge(service.status)}
-                    </td>
-
-                    <td>
-                        <button
-                            class="btn btn-sm btn-secondary"
-                            onclick="showServiceDetails('${escapeHTML(service.id)}')">
-                            Ver
-                        </button>
-                    </td>
-                </tr>
-            `)
-            .join('');
 
     } catch (error) {
         console.error('Erro ao carregar histórico:', error);
 
-        toastSafe(
+        tbody.innerHTML = '';
+
+        if (empty) empty.style.display = 'block';
+
+        notify(
             'Erro',
             'Não foi possível carregar o histórico.',
             'error'
@@ -492,16 +492,11 @@ async function loadClientHistory() {
    SOLICITAR ORÇAMENTO
 ===================================================== */
 
-
-/* =====================================================
-   SOLICITAÇÃO DE ORÇAMENTO PELO CLIENTE
-===================================================== */
-
 function requestBudget() {
     const modal = document.getElementById('budgetRequestModal');
 
     if (!modal) {
-        toast(
+        notify(
             'Erro',
             'Formulário de orçamento não encontrado.',
             'error'
@@ -511,42 +506,29 @@ function requestBudget() {
 
     modal.classList.add('active');
     modal.setAttribute('aria-hidden', 'false');
+
+    document.getElementById('requestDeviceType')?.focus();
 }
 
 async function submitBudgetRequest(event) {
     event.preventDefault();
 
-    if (!supabaseClient || !currentUser) {
-        toast(
-            'Erro',
-            'Sua sessão expirou. Faça login novamente.',
-            'error'
-        );
-        return;
-    }
+    if (!await ensureClientSession()) return;
 
     const deviceType = document
-        .getElementById('requestDeviceType')
-        .value
-        .trim();
+        .getElementById('requestDeviceType')?.value.trim();
 
     const deviceModel = document
-        .getElementById('requestDeviceModel')
-        .value
-        .trim();
+        .getElementById('requestDeviceModel')?.value.trim();
 
     const problemType = document
-        .getElementById('requestProblemType')
-        .value
-        .trim();
+        .getElementById('requestProblemType')?.value.trim();
 
     const observations = document
-        .getElementById('requestObservations')
-        .value
-        .trim();
+        .getElementById('requestObservations')?.value.trim();
 
     if (!deviceType || !problemType) {
-        toast(
+        notify(
             'Atenção',
             'Preencha o tipo de aparelho e o problema.',
             'warning'
@@ -554,7 +536,9 @@ async function submitBudgetRequest(event) {
         return;
     }
 
-    const button = document.getElementById('submitBudgetRequestBtn');
+    const button = document.getElementById(
+        'submitBudgetRequestBtn'
+    );
 
     if (button) {
         button.disabled = true;
@@ -562,35 +546,40 @@ async function submitBudgetRequest(event) {
     }
 
     try {
-        const { error } = await supabaseClient
+        /*
+          ATENÇÃO:
+          Confirme no setup.sql se a tabela possui user_id.
+          O código abaixo depende dessa coluna.
+        */
+
+        const { error } = await window.supabaseClient
             .from('budget_requests')
             .insert({
-                user_id: currentUser.id,
+                user_id: window.currentUser.id,
                 device_type: deviceType,
                 device_model: deviceModel || null,
                 problem_type: problemType,
                 observations: observations || null
             });
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
-        toast(
+        notify(
             'Solicitação enviada!',
             'Nossa equipe analisará seu pedido em breve.',
             'success'
         );
 
-        document.getElementById('budgetRequestForm').reset();
+        document.getElementById('budgetRequestForm')?.reset();
+
         closeModal('budgetRequestModal');
 
     } catch (error) {
-        console.error('Erro ao solicitar orçamento:', error);
+        console.error('Erro ao enviar orçamento:', error);
 
-        toast(
+        notify(
             'Erro ao enviar',
-            error.message || 'Não foi possível enviar sua solicitação.',
+            'Não foi possível enviar sua solicitação. Verifique a configuração do banco.',
             'error'
         );
     } finally {
@@ -601,7 +590,6 @@ async function submitBudgetRequest(event) {
     }
 }
 
-
 /* =====================================================
    NAVEGAÇÃO
 ===================================================== */
@@ -609,66 +597,49 @@ async function submitBudgetRequest(event) {
 async function viewMyServices() {
     await loadMyServices();
 
-    const element = document.getElementById('myServicesList');
-
-    if (element) {
-        element.scrollIntoView({
+    document.getElementById('myServicesList')
+        ?.scrollIntoView({
             behavior: 'smooth',
             block: 'start'
         });
-    }
 }
 
 async function viewHistory() {
     await loadClientHistory();
 
-    const element = document.getElementById('clientHistoryBody');
-
-    if (element) {
-        element.scrollIntoView({
+    document.getElementById('clientHistoryBody')
+        ?.scrollIntoView({
             behavior: 'smooth',
             block: 'center'
         });
-    }
 }
 
 /* =====================================================
-   PAGAMENTO DO SINAL
+   PAGAMENTOS
 ===================================================== */
 
 async function paySignal(serviceId) {
     if (!await ensureClientSession()) return;
 
-    /*
-      NÃO alteramos o status do serviço diretamente.
-
-      O correto é criar uma cobrança através de um
-      backend seguro ou de uma Edge Function do Supabase.
-    */
-
-    toastSafe(
+    notify(
         'Pagamento',
         'A integração de pagamento ainda precisa ser configurada.',
         'info'
     );
 
-    console.log('Solicitação de pagamento do sinal:', serviceId);
+    console.log('Pagamento do sinal solicitado:', serviceId);
 }
-
-/* =====================================================
-   PAGAMENTO RESTANTE
-===================================================== */
 
 async function payRemaining(serviceId) {
     if (!await ensureClientSession()) return;
 
-    toastSafe(
+    notify(
         'Pagamento',
         'A integração de pagamento ainda precisa ser configurada.',
         'info'
     );
 
-    console.log('Solicitação de pagamento restante:', serviceId);
+    console.log('Pagamento restante solicitado:', serviceId);
 }
 
 /* =====================================================
@@ -679,16 +650,17 @@ async function showServiceDetails(serviceId) {
     if (!await ensureClientSession()) return;
 
     try {
-        const { data: service, error } = await supabaseClient
-            .from('services')
-            .select('*')
-            .eq('id', serviceId)
-            .maybeSingle();
+        const { data: service, error } =
+            await window.supabaseClient
+                .from('services')
+                .select('*')
+                .eq('id', serviceId)
+                .maybeSingle();
 
         if (error) throw error;
 
         if (!service) {
-            toastSafe(
+            notify(
                 'Aviso',
                 'Serviço não encontrado.',
                 'warning'
@@ -708,89 +680,44 @@ async function showServiceDetails(serviceId) {
             ? ` - ${escapeHTML(service.device_model)}`
             : '';
 
-        const problem = escapeHTML(service.problem_type || '-');
-        const observations = service.observations
-            ? escapeHTML(service.observations)
-            : '';
-
         title.textContent = `Serviço - ${device}`;
 
         body.innerHTML = `
-            <div style="display: grid; gap: 1rem;">
+            <div style="display:grid;gap:1rem">
 
                 <div>
                     <h4>Aparelho</h4>
-                    <p class="text-muted">${device}${model}</p>
+                    <p>${device}${model}</p>
                 </div>
 
                 <div>
                     <h4>Problema</h4>
-                    <p class="text-muted">${problem}</p>
+                    <p>${escapeHTML(service.problem_type || '-')}</p>
                 </div>
 
-                ${
-                    observations
-                        ? `
-                        <div>
-                            <h4>Observações</h4>
-                            <p class="text-muted">${observations}</p>
-                        </div>
-                        `
-                        : ''
-                }
+                <div>
+                    <h4>Observações</h4>
+                    <p>${escapeHTML(service.observations || '-')}</p>
+                </div>
 
                 <div>
-                    <h4>Valores</h4>
+                    <h4>Valor total</h4>
+                    <p>${formatMoney(service.total_value)}</p>
+                </div>
 
-                    <div class="service-details">
-
-                        <div class="service-detail-item">
-                            <div class="service-detail-label">Total</div>
-                            <div class="service-detail-value">
-                                ${formatMoney(service.total_value)}
-                            </div>
-                        </div>
-
-                        <div class="service-detail-item">
-                            <div class="service-detail-label">Sinal</div>
-                            <div class="service-detail-value small">
-                                ${
-                                    service.signal_paid_at
-                                        ? '✓ Pago'
-                                        : '⚠ Pendente'
-                                }
-                            </div>
-                        </div>
-
-                        <div class="service-detail-item">
-                            <div class="service-detail-label">Restante</div>
-                            <div class="service-detail-value small">
-                                ${formatMoney(service.remaining_value)}
-                            </div>
-                        </div>
-
-                    </div>
+                <div>
+                    <h4>Restante</h4>
+                    <p>${formatMoney(service.remaining_value)}</p>
                 </div>
 
                 <div>
                     <h4>Status</h4>
-                    <p class="text-muted">
-                        ${escapeHTML(getStatusLabel(service.status))}
-                    </p>
+                    <p>${escapeHTML(getStatusLabel(service.status))}</p>
+                </div>
 
-                    <p class="text-muted">
-                        Criado: ${escapeHTML(formatDateTime(service.created_at))}
-                    </p>
-
-                    ${
-                        service.completed_at
-                            ? `
-                            <p class="text-muted">
-                                Concluído: ${escapeHTML(formatDateTime(service.completed_at))}
-                            </p>
-                            `
-                            : ''
-                    }
+                <div>
+                    <h4>Data de criação</h4>
+                    <p>${escapeHTML(formatDateTime(service.created_at))}</p>
                 </div>
 
             </div>
@@ -798,6 +725,7 @@ async function showServiceDetails(serviceId) {
 
         footer.innerHTML = `
             <button
+                type="button"
                 class="btn btn-secondary"
                 onclick="closeModal('serviceModal')">
                 Fechar
@@ -808,9 +736,9 @@ async function showServiceDetails(serviceId) {
         modal.setAttribute('aria-hidden', 'false');
 
     } catch (error) {
-        console.error('Erro ao mostrar detalhes:', error);
+        console.error('Erro ao carregar detalhes:', error);
 
-        toastSafe(
+        notify(
             'Erro',
             'Não foi possível carregar os detalhes.',
             'error'
@@ -819,7 +747,7 @@ async function showServiceDetails(serviceId) {
 }
 
 /* =====================================================
-   FECHAR MODAL
+   MODAIS
 ===================================================== */
 
 function closeModal(modalId) {
@@ -831,65 +759,26 @@ function closeModal(modalId) {
     modal.setAttribute('aria-hidden', 'true');
 }
 
-document.getElementById('serviceModal')?.addEventListener(
-    'click',
-    event => {
-        if (event.target.id === 'serviceModal') {
-            closeModal('serviceModal');
-        }
+document.addEventListener('click', event => {
+    if (event.target.classList.contains('modal-overlay')) {
+        closeModal(event.target.id);
     }
-);
+});
 
 /* =====================================================
-   AVALIAR SERVIÇO
+   AVALIAÇÃO
 ===================================================== */
 
 async function rateService(serviceId) {
     if (!await ensureClientSession()) return;
 
-    const rating = prompt('Avalie de 1 a 5 estrelas:');
+    notify(
+        'Avaliação',
+        'A avaliação será disponibilizada em breve.',
+        'info'
+    );
 
-    if (
-        !rating ||
-        !/^[1-5]$/.test(rating.trim())
-    ) {
-        toastSafe(
-            'Avaliação inválida',
-            'Digite um número de 1 a 5.',
-            'warning'
-        );
-        return;
-    }
-
-    try {
-        const { error } = await supabaseClient
-            .from('services')
-            .update({
-                rating: Number(rating),
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', serviceId);
-
-        if (error) throw error;
-
-        toastSafe(
-            'Avaliação enviada!',
-            'Obrigado pelo feedback.',
-            'success'
-        );
-
-        await loadMyServices();
-        await loadClientHistory();
-
-    } catch (error) {
-        console.error('Erro ao avaliar serviço:', error);
-
-        toastSafe(
-            'Erro',
-            'Não foi possível enviar a avaliação.',
-            'error'
-        );
-    }
+    console.log('Avaliação do serviço:', serviceId);
 }
 
 /* =====================================================
@@ -908,6 +797,7 @@ window.loadProfile = loadProfile;
 window.loadMyServices = loadMyServices;
 window.loadClientHistory = loadClientHistory;
 window.requestBudget = requestBudget;
+window.submitBudgetRequest = submitBudgetRequest;
 window.viewMyServices = viewMyServices;
 window.viewHistory = viewHistory;
 window.paySignal = paySignal;
@@ -918,3 +808,4 @@ window.rateService = rateService;
 window.getStatusLabel = getStatusLabel;
 window.getStatusBadge = getStatusBadge;
 window.redirectToLogin = redirectToLogin;
+window.ensureClientSession = ensureClientSession;
