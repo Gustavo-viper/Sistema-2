@@ -1,112 +1,553 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Cliente - Assistência Técnica Gustavo & Emily</title>
+
+    <meta name="theme-color" content="#05070d">
+    <meta name="description" content="Painel do cliente da Gustavo & Emily Assistência Técnica">
+
+    <title>Painel do Cliente | Gustavo & Emily</title>
+
     <link rel="stylesheet" href="style.css">
+
     <style>
-        .profile-header { background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%); border-radius: 16px; padding: 2rem; color: white; margin-bottom: 2rem; }
-        .profile-header h1 { font-size: 1.5rem; margin: 0 0 0.5rem; }
-        .profile-header p { opacity: 0.9; margin: 0; }
-        .profile-header .logout-btn { margin-top: 1rem; }
-        .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .action-card { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: all 0.3s ease; border: 2px solid transparent; }
-        .action-card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
-        .action-card.primary { border-color: #2563eb; }
-        .action-card.success { border-color: #10b981; }
-        .action-card.warning { border-color: #f59e0b; }
-        .action-icon { font-size: 2rem; margin-bottom: 0.75rem; }
-        .action-card h3 { font-size: 1.125rem; font-weight: 600; margin: 0 0 0.5rem; }
-        .action-card p { color: #6b7280; font-size: 0.875rem; margin: 0 0 1rem; }
-        .services-list-client { display: flex; flex-direction: column; gap: 1rem; }
-        .service-item-client { background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #2563eb; }
-        .service-item-client.pending { border-left-color: #f59e0b; }
-        .service-item-client.processing { border-left-color: #2563eb; }
-        .service-item-client.ready { border-left-color: #10b981; }
-        .service-item-client.completed { border-left-color: #9ca3af; opacity: 0.7; }
-        .client-skeleton { text-align: center; padding: 3rem; color: #6b7280; }
-        @media (max-width: 480px) { .profile-header { padding: 1.5rem; } }
+        /* =====================================================
+           PAINEL DO CLIENTE
+        ===================================================== */
+
+        .profile-header {
+            background: linear-gradient(135deg, #2563eb, #60a5fa);
+            border-radius: 16px;
+            padding: 2rem;
+            color: #fff;
+            margin-bottom: 2rem;
+        }
+
+        .profile-header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem;
+            word-break: break-word;
+        }
+
+        .profile-header p {
+            opacity: 0.9;
+            margin: 0;
+            word-break: break-word;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(250px, 1fr)
+            );
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: transform 0.2s ease,
+                        box-shadow 0.2s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-card.primary {
+            border-color: #2563eb;
+        }
+
+        .action-card.success {
+            border-color: #10b981;
+        }
+
+        .action-card.warning {
+            border-color: #f59e0b;
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .action-card h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem;
+        }
+
+        .action-card p {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin: 0 0 1rem;
+        }
+
+        .services-list-client {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .service-item-client {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border-left: 4px solid #2563eb;
+        }
+
+        .service-item-client.pending {
+            border-left-color: #f59e0b;
+        }
+
+        .service-item-client.processing {
+            border-left-color: #2563eb;
+        }
+
+        .service-item-client.ready {
+            border-left-color: #10b981;
+        }
+
+        .service-item-client.completed {
+            border-left-color: #9ca3af;
+            opacity: 0.7;
+        }
+
+        .client-skeleton {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 1.5rem;
+        }
+
+        .section-title.spaced {
+            margin-top: 2rem;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-container table {
+            min-width: 650px;
+        }
+
+        .logout-btn {
+            margin-left: auto;
+        }
+
+        /* =====================================================
+           ACESSIBILIDADE E RESPONSIVIDADE
+        ===================================================== */
+
+        button:focus-visible,
+        a:focus-visible {
+            outline: 3px solid #60a5fa;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 600px) {
+            .profile-header {
+                padding: 1.5rem;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .action-card {
+                padding: 1.25rem;
+            }
+
+            .profile-header h1 {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .action-card {
+                transition: none;
+            }
+
+            .action-card:hover {
+                transform: none;
+            }
+        }
     </style>
 </head>
+
 <body>
+
+    <!-- =====================================================
+         CABEÇALHO
+    ===================================================== -->
+
     <header class="header">
-        <a href="#" class="logo">
-            <div class="logo-icon">GE</div>
+
+        <a href="client.html"
+           class="logo"
+           aria-label="Ir para o painel do cliente">
+
+            <div class="logo-icon" aria-hidden="true">GE</div>
+
             <div class="logo-text">
                 <h1>Assistência Técnica Gustavo & Emily</h1>
                 <span>Seu Painel do Cliente</span>
             </div>
+
         </a>
-        <button class="btn btn-secondary logout-btn" onclick="logout()" style="margin-left:auto;">Sair</button>
+
+        <button
+            type="button"
+            class="btn btn-secondary logout-btn"
+            onclick="logout()"
+            aria-label="Sair da conta">
+
+            Sair
+
+        </button>
+
     </header>
-    
+
+    <!-- =====================================================
+         CONTEÚDO PRINCIPAL
+    ===================================================== -->
+
     <main class="container">
-        <div class="profile-header" id="profileHeader">
-            <div style="text-align:center;">
-                <div style="width:80px;height:80px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1rem;" id="profileAvatar"></div>
+
+        <!-- PERFIL DO CLIENTE -->
+
+        <section
+            class="profile-header"
+            id="profileHeader"
+            aria-labelledby="profileName">
+
+            <div style="text-align: center;">
+
+                <div
+                    class="profile-avatar"
+                    id="profileAvatar"
+                    aria-hidden="true">
+
+                    👤
+
+                </div>
+
                 <h1 id="profileName">Carregando...</h1>
-                <p id="profileEmail">carregando@email.com</p>
+
+                <p id="profileEmail">
+                    Carregando e-mail...
+                </p>
+
             </div>
-        </div>
-        
-        <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1.5rem;"> rápidas</h2>
-        <div class="actions-grid" id="actionsGrid">
-            <div class="action-card primary">
-                <div class="action-icon">📱</div>
-                <h3>Solicitar Orçamento</h3>
-                <p>Envie um cálculo para conserto do seu aparelho</p>
-                <button class="btn btn-primary btn-block" onclick="requestBudget()">Solicitar Agora</button>
+
+        </section>
+
+        <!-- AÇÕES RÁPIDAS -->
+
+        <section aria-labelledby="quickActionsTitle">
+
+            <h2
+                id="quickActionsTitle"
+                class="section-title">
+
+                Ações rápidas
+
+            </h2>
+
+            <div
+                class="actions-grid"
+                id="actionsGrid">
+
+                <!-- SOLICITAR ORÇAMENTO -->
+
+                <article class="action-card primary">
+
+                    <div
+                        class="action-icon"
+                        aria-hidden="true">
+
+                        📱
+
+                    </div>
+
+                    <h3>Solicitar Orçamento</h3>
+
+                    <p>
+                        Envie uma solicitação para consertar
+                        seu aparelho.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-primary btn-block"
+                        onclick="requestBudget()">
+
+                        Solicitar Agora
+
+                    </button>
+
+                </article>
+
+                <!-- MEUS SERVIÇOS -->
+
+                <article class="action-card success">
+
+                    <div
+                        class="action-icon"
+                        aria-hidden="true">
+
+                        📋
+
+                    </div>
+
+                    <h3>Meus Serviços</h3>
+
+                    <p>
+                        Acompanhe o andamento dos seus serviços.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-success btn-block"
+                        onclick="viewMyServices()">
+
+                        Ver Serviços
+
+                    </button>
+
+                </article>
+
+                <!-- HISTÓRICO -->
+
+                <article class="action-card warning">
+
+                    <div
+                        class="action-icon"
+                        aria-hidden="true">
+
+                        📝
+
+                    </div>
+
+                    <h3>Histórico</h3>
+
+                    <p>
+                        Consulte todos os serviços realizados.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-warning btn-block"
+                        onclick="viewHistory()">
+
+                        Ver Histórico
+
+                    </button>
+
+                </article>
+
             </div>
-            <div class="action-card success">
-                <div class="action-icon">📋</div>
-                <h3>Meus Serviços</h3>
-                <p>Acompanhe o status dos seus serviços</p>
-                <button class="btn btn-success btn-block" onclick="viewMyServices()">Ver Serviços</button>
+
+        </section>
+
+        <!-- SERVIÇOS EM ANDAMENTO -->
+
+        <section aria-labelledby="ongoingServicesTitle">
+
+            <h2
+                id="ongoingServicesTitle"
+                class="section-title">
+
+                Meus Serviços em Andamento
+
+            </h2>
+
+            <div
+                id="myServicesList"
+                class="services-list-client"
+                aria-live="polite">
+
             </div>
-            <div class="action-card warning">
-                <div class="action-icon">📝</div>
-                <h3>Histórico</h3>
-                <p>Veja todos os serviços realizados</p>
-                <button class="btn btn-warning btn-block" onclick="viewHistory()">Ver Histórico</button>
+
+            <div
+                id="noServicesClient"
+                class="client-skeleton">
+
+                <div
+                    class="empty-icon"
+                    aria-hidden="true">
+
+                    📱
+
+                </div>
+
+                <p>
+                    Você ainda não tem serviços em andamento.
+                </p>
+
             </div>
-        </div>
-        
-        <h2 style="font-size:1.25rem;font-weight:700;margin-bottom:1.5rem;">Meus Serviços em Andamento</h2>
-        <div id="myServicesList" class="services-list-client"></div>
-        <div id="noServicesClient" class="client-skeleton">
-            <div style="font-size:3rem;margin-bottom:1rem;">📱</div>
-            <p>Você ainda não tem serviços em andamento</p>
-        </div>
-        
-        <h2 style="font-size:1.25rem;font-weight:700;margin:2rem 0 1.5rem;">Histórico Completo</h2>
-        <div class="table-container">
-            <table class="table">
-                <thead>
-                    <tr><th>Data</th><th>Aparelho</th><th>Problema</th><th>Total</th><th>Status</th><th>Ações</th></tr>
-                </thead>
-                <tbody id="clientHistoryBody"></tbody>
-            </table>
-        </div>
-        <div id="noHistoryClient" class="client-skeleton">
-            <p>Nenhum serviço no histórico</p>
-        </div>
+
+        </section>
+
+        <!-- HISTÓRICO COMPLETO -->
+
+        <section aria-labelledby="historyTitle">
+
+            <h2
+                id="historyTitle"
+                class="section-title spaced">
+
+                Histórico Completo
+
+            </h2>
+
+            <div class="table-container">
+
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Aparelho</th>
+                            <th scope="col">Problema</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Ações</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="clientHistoryBody">
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div
+                id="noHistoryClient"
+                class="client-skeleton">
+
+                <p>
+                    Nenhum serviço no histórico.
+                </p>
+
+            </div>
+
+        </section>
+
     </main>
-    
-    <div class="toast-container" id="toastContainer"></div>
-    <div class="modal-overlay" id="serviceModal">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Detalhes do Serviço</h3>
-                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
-            </div>
-            <div class="modal-body" id="modalBody"></div>
-            <div class="modal-footer" id="modalFooter"></div>
-        </div>
+
+    <!-- =====================================================
+         NOTIFICAÇÕES
+    ===================================================== -->
+
+    <div
+        class="toast-container"
+        id="toastContainer"
+        aria-live="polite"
+        aria-atomic="true">
+
     </div>
-    
+
+    <!-- =====================================================
+         MODAL DE SERVIÇO
+    ===================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="serviceModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+        aria-hidden="true">
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <h3
+                    class="modal-title"
+                    id="modalTitle">
+
+                    Detalhes do Serviço
+
+                </h3>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="closeModal('serviceModal')"
+                    aria-label="Fechar janela">
+
+                    ×
+
+                </button>
+
+            </div>
+
+            <div
+                class="modal-body"
+                id="modalBody">
+
+            </div>
+
+            <div
+                class="modal-footer"
+                id="modalFooter">
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         SCRIPTS
+    ===================================================== -->
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <script src="auth.js"></script>
+
     <script src="client.js"></script>
+
 </body>
+
 </html>
