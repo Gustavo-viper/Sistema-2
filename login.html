@@ -1,77 +1,568 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Assistencia Tecnica Gustavo e Emily</title>
-<link rel="stylesheet" href="style.css">
-<style>
-.login-container{max-width:420px;margin:3rem auto;padding:0 1rem}
-.login-box{background:#fff;border-radius:16px;padding:2rem;box-shadow:0 10px 25px rgba(0,0,0,.1)}
-.login-logo{text-align:center;margin-bottom:1.5rem}
-.auth-tabs{display:flex;background:#f3f4f6;border-radius:8px;padding:.25rem;margin-bottom:1.5rem}
-.auth-tab{flex:1;padding:.7rem;border:none;background:transparent;cursor:pointer;font-weight:700;color:#6b7280;border-radius:6px}
-.auth-tab.active{background:#fff;color:#1e293b;box-shadow:0 2px 4px rgba(0,0,0,.1)}
-.auth-form{display:none}
-.auth-form.active{display:block}
-.switch-auth{text-align:center;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #e5e7eb}
-.switch-auth a{color:#2563eb;font-weight:700;text-decoration:none}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#05070d">
+  <meta name="description" content="Login da Assistência Técnica Gustavo & Emily">
+
+  <title>Login | Gustavo & Emily Assistência Técnica</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: #05070d;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 430px;
+      margin: 2rem auto;
+    }
+
+    .login-box {
+      width: 100%;
+      padding: 2rem;
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .login-logo {
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
+
+    .logo-icon {
+      width: 70px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      border-radius: 50%;
+      background: #111827;
+      color: #22c55e;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .login-logo h1 {
+      margin: 0;
+      color: #111827;
+      font-size: 1.35rem;
+      line-height: 1.4;
+    }
+
+    .login-logo p {
+      margin: 0.5rem 0 0;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1.5rem;
+      padding: 0.25rem;
+      background: #f3f4f6;
+      border-radius: 10px;
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 0.75rem 0.5rem;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #6b7280;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: 0.2s ease;
+    }
+
+    .auth-tab:hover {
+      color: #111827;
+    }
+
+    .auth-tab.active {
+      background: #ffffff;
+      color: #111827;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .auth-form {
+      display: none;
+    }
+
+    .auth-form.active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: #374151;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .form-input {
+      width: 100%;
+      min-height: 46px;
+      padding: 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #111827;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .forgot-password {
+      display: block;
+      margin-top: 0.9rem;
+      color: #6b7280;
+      font-size: 0.85rem;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .forgot-password:hover {
+      color: #2563eb;
+      text-decoration: underline;
+    }
+
+    .switch-auth {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+
+    .switch-auth a,
+    .back-home {
+      color: #2563eb;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .switch-auth a:hover,
+    .back-home:hover {
+      text-decoration: underline;
+    }
+
+    .back-home-container {
+      margin-top: 1.2rem;
+      text-align: center;
+    }
+
+    .back-home {
+      color: #6b7280;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .password-help {
+      display: block;
+      margin-top: 0.35rem;
+      color: #6b7280;
+      font-size: 0.75rem;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (max-width: 480px) {
+      .login-box {
+        padding: 1.4rem;
+      }
+
+      .login-logo h1 {
+        font-size: 1.15rem;
+      }
+    }
+  </style>
 </head>
+
 <body>
-<div class="login-container">
-<div class="login-box">
-<div class="login-logo"><div class="logo-icon">GE</div><h1>Assistencia Tecnica</h1><p style="color:#6b7280">Area do cliente e do admin</p></div>
-<div class="auth-tabs">
-<button type="button" class="auth-tab active" id="tabLoginBtn">Entrar</button>
-<button type="button" class="auth-tab" id="tabRegisterBtn">Criar Conta</button>
-</div>
-<form class="auth-form active" id="loginForm">
-<div class="form-group"><label class="form-label">E-mail</label><input type="email" class="form-input" id="loginEmail" required></div>
-<div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="loginPassword" required></div>
-<button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">Entrar</button>
-<p style="text-align:center;margin-top:.8rem"><a href="#" id="forgotLink" style="color:#6b7280;font-size:.85rem">Esqueceu a senha?</a></p>
-</form>
-<form class="auth-form" id="registerForm">
-<div class="form-group"><label class="form-label">Nome Completo</label><input type="text" class="form-input" id="registerName" required></div>
-<div class="form-group"><label class="form-label">E-mail</label><input type="email" class="form-input" id="registerEmail" required></div>
-<div class="form-group"><label class="form-label">Telefone</label><input type="tel" class="form-input" id="registerPhone" placeholder="(00) 00000-0000"></div>
-<div class="form-group"><label class="form-label">Senha</label><input type="password" class="form-input" id="registerPassword" minlength="6" required></div>
-<div class="form-group"><label class="form-label">Confirmar Senha</label><input type="password" class="form-input" id="registerConfirm" required></div>
-<button type="submit" class="btn btn-success btn-lg btn-block" id="registerBtn">Criar Conta</button>
-</form>
-<div class="switch-auth"><span id="switchText">Nao tem conta? <a href="#" id="switchLink">Criar conta</a></span></div>
-<div style="text-align:center;margin-top:1rem"><a href="index.html" style="color:#6b7280;font-size:.85rem">Voltar ao inicio</a></div>
-</div>
-</div>
-<div class="toast-container" id="toastContainer"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="auth.js"></script>
-<script>
-(function(){
-function show(which){
-var isLogin = which==='login';
-document.getElementById('tabLoginBtn').classList.toggle('active',isLogin);
-document.getElementById('tabRegisterBtn').classList.toggle('active',!isLogin);
-document.getElementById('loginForm').classList.toggle('active',isLogin);
-document.getElementById('registerForm').classList.toggle('active',!isLogin);
-document.getElementById('switchText').innerHTML = isLogin ? 'Nao tem conta? <a href="#" id="switchLink">Criar conta</a>' : 'Ja tem conta? <a href="#" id="switchLink">Fazer login</a>';
-bind();
-}
-function bind(){
-var l=document.getElementById('switchLink');
-if(l) l.onclick=function(e){e.preventDefault();show(document.getElementById('loginForm').classList.contains('active')?'register':'login');};
-}
-document.getElementById('tabLoginBtn').onclick=function(){show('login');};
-document.getElementById('tabRegisterBtn').onclick=function(){show('register');};
-bind();
-document.getElementById('loginForm').onsubmit=function(e){if(typeof handleLogin==='function')handleLogin(e);else{e.preventDefault();alert('auth.js nao carregou. Recarregue a pagina.');}};
-document.getElementById('registerForm').onsubmit=function(e){if(typeof handleRegister==='function')handleRegister(e);else{e.preventDefault();alert('auth.js nao carregou. Recarregue a pagina.');}};
-document.getElementById('forgotLink').onclick=function(e){e.preventDefault();if(typeof showForgotPassword==='function')showForgotPassword();};
-window.switchTab=show;
-var p=new URLSearchParams(window.location.search).get('tab');
-if(p==='register') show('register');
-})();
-</script>
+
+  <main class="login-container">
+    <section class="login-box" aria-label="Autenticação">
+
+      <div class="login-logo">
+        <div class="logo-icon" aria-hidden="true">GE</div>
+
+        <h1>Gustavo & Emily</h1>
+
+        <p>Assistência Técnica</p>
+        <p>Área do cliente e do administrador</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist" aria-label="Autenticação">
+
+        <button
+          type="button"
+          class="auth-tab active"
+          id="tabLoginBtn"
+          role="tab"
+          aria-selected="true"
+          aria-controls="loginForm">
+          Entrar
+        </button>
+
+        <button
+          type="button"
+          class="auth-tab"
+          id="tabRegisterBtn"
+          role="tab"
+          aria-selected="false"
+          aria-controls="registerForm">
+          Criar conta
+        </button>
+
+      </div>
+
+      <!-- FORMULÁRIO DE LOGIN -->
+      <form
+        class="auth-form active"
+        id="loginForm"
+        novalidate
+        aria-labelledby="tabLoginBtn">
+
+        <div class="form-group">
+          <label class="form-label" for="loginEmail">
+            E-mail
+          </label>
+
+          <input
+            type="email"
+            class="form-input"
+            id="loginEmail"
+            name="email"
+            placeholder="Digite seu e-mail"
+            autocomplete="email"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="loginPassword">
+            Senha
+          </label>
+
+          <input
+            type="password"
+            class="form-input"
+            id="loginPassword"
+            name="password"
+            placeholder="Digite sua senha"
+            autocomplete="current-password"
+            required>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary btn-lg btn-block"
+          id="loginBtn">
+          Entrar
+        </button>
+
+        <a
+          href="#"
+          id="forgotLink"
+          class="forgot-password">
+          Esqueceu a senha?
+        </a>
+
+      </form>
+
+      <!-- FORMULÁRIO DE CADASTRO -->
+      <form
+        class="auth-form"
+        id="registerForm"
+        novalidate
+        aria-labelledby="tabRegisterBtn">
+
+        <div class="form-group">
+          <label class="form-label" for="registerName">
+            Nome completo
+          </label>
+
+          <input
+            type="text"
+            class="form-input"
+            id="registerName"
+            name="name"
+            placeholder="Digite seu nome completo"
+            autocomplete="name"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registerEmail">
+            E-mail
+          </label>
+
+          <input
+            type="email"
+            class="form-input"
+            id="registerEmail"
+            name="email"
+            placeholder="Digite seu e-mail"
+            autocomplete="email"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registerPhone">
+            Telefone
+          </label>
+
+          <input
+            type="tel"
+            class="form-input"
+            id="registerPhone"
+            name="phone"
+            placeholder="(00) 00000-0000"
+            autocomplete="tel"
+            inputmode="tel">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registerPassword">
+            Senha
+          </label>
+
+          <input
+            type="password"
+            class="form-input"
+            id="registerPassword"
+            name="password"
+            placeholder="Crie uma senha"
+            minlength="6"
+            autocomplete="new-password"
+            required>
+
+          <small class="password-help">
+            A senha deve conter pelo menos 6 caracteres.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="registerConfirm">
+            Confirmar senha
+          </label>
+
+          <input
+            type="password"
+            class="form-input"
+            id="registerConfirm"
+            name="password_confirmation"
+            placeholder="Digite a senha novamente"
+            minlength="6"
+            autocomplete="new-password"
+            required>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-success btn-lg btn-block"
+          id="registerBtn">
+          Criar conta
+        </button>
+
+      </form>
+
+      <div class="switch-auth">
+        <span id="switchText">
+          Não tem uma conta?
+          <a href="#" id="switchLink">Criar conta</a>
+        </span>
+      </div>
+
+      <div class="back-home-container">
+        <a href="index.html" class="back-home">
+          ← Voltar ao início
+        </a>
+      </div>
+
+    </section>
+  </main>
+
+  <div
+    class="toast-container"
+    id="toastContainer"
+    aria-live="polite"
+    aria-atomic="true">
+  </div>
+
+  <!-- SUPABASE -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+  <!-- AUTENTICAÇÃO -->
+  <script src="auth.js"></script>
+
+  <!-- CONTROLE DA TELA DE LOGIN -->
+  <script>
+    (function () {
+      'use strict';
+
+      const tabLoginBtn = document.getElementById('tabLoginBtn');
+      const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+
+      const loginForm = document.getElementById('loginForm');
+      const registerForm = document.getElementById('registerForm');
+
+      const switchText = document.getElementById('switchText');
+      const forgotLink = document.getElementById('forgotLink');
+
+      if (
+        !tabLoginBtn ||
+        !tabRegisterBtn ||
+        !loginForm ||
+        !registerForm ||
+        !switchText
+      ) {
+        console.error('Erro: elementos da tela de login não encontrados.');
+        return;
+      }
+
+      function show(which) {
+        const isLogin = which === 'login';
+
+        tabLoginBtn.classList.toggle('active', isLogin);
+        tabRegisterBtn.classList.toggle('active', !isLogin);
+
+        tabLoginBtn.setAttribute('aria-selected', String(isLogin));
+        tabRegisterBtn.setAttribute('aria-selected', String(!isLogin));
+
+        loginForm.classList.toggle('active', isLogin);
+        registerForm.classList.toggle('active', !isLogin);
+
+        loginForm.setAttribute('aria-hidden', String(!isLogin));
+        registerForm.setAttribute('aria-hidden', String(isLogin));
+
+        if (isLogin) {
+          switchText.innerHTML =
+            'Não tem uma conta? ' +
+            '<a href="#" id="switchLink">Criar conta</a>';
+        } else {
+          switchText.innerHTML =
+            'Já tem uma conta? ' +
+            '<a href="#" id="switchLink">Fazer login</a>';
+        }
+
+        bindSwitchLink();
+      }
+
+      function bindSwitchLink() {
+        const switchLink = document.getElementById('switchLink');
+
+        if (!switchLink) return;
+
+        switchLink.addEventListener('click', function (event) {
+          event.preventDefault();
+
+          const isLoginActive = loginForm.classList.contains('active');
+
+          show(isLoginActive ? 'register' : 'login');
+        });
+      }
+
+      tabLoginBtn.addEventListener('click', function () {
+        show('login');
+      });
+
+      tabRegisterBtn.addEventListener('click', function () {
+        show('register');
+      });
+
+      loginForm.addEventListener('submit', function (event) {
+        if (typeof handleLogin === 'function') {
+          handleLogin(event);
+        } else {
+          event.preventDefault();
+          alert('O arquivo auth.js não foi carregado. Recarregue a página.');
+        }
+      });
+
+      registerForm.addEventListener('submit', function (event) {
+        if (typeof handleRegister === 'function') {
+          handleRegister(event);
+        } else {
+          event.preventDefault();
+          alert('O arquivo auth.js não foi carregado. Recarregue a página.');
+        }
+      });
+
+      if (forgotLink) {
+        forgotLink.addEventListener('click', function (event) {
+          event.preventDefault();
+
+          if (typeof showForgotPassword === 'function') {
+            showForgotPassword();
+          } else {
+            alert('A função de recuperação de senha não está disponível.');
+          }
+        });
+      }
+
+      window.switchTab = show;
+
+      bindSwitchLink();
+
+      const params = new URLSearchParams(window.location.search);
+      const selectedTab = params.get('tab');
+
+      if (selectedTab === 'register') {
+        show('register');
+      } else {
+        show('login');
+      }
+    })();
+  </script>
+
 </body>
 </html>
