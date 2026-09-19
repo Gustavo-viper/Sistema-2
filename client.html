@@ -489,6 +489,102 @@
     <!-- =====================================================
          MODAL DE SERVIÇO
     ===================================================== -->
+    
+    
+<!-- Modal de solicitação de orçamento -->
+<div id="budgetRequestModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="budgetRequestTitle">
+
+        <div class="modal-header">
+            <h2 id="budgetRequestTitle" class="modal-title">
+                Solicitar Orçamento
+            </h2>
+
+            <button
+                type="button"
+                class="modal-close"
+                onclick="closeModal('budgetRequestModal')"
+                aria-label="Fechar">
+                ×
+            </button>
+        </div>
+
+        <form id="budgetRequestForm">
+
+            <div class="form-group">
+                <label class="form-label" for="requestDeviceType">
+                    Tipo de aparelho <span class="required">*</span>
+                </label>
+
+                <select id="requestDeviceType" class="form-select" required>
+                    <option value="">Selecione o aparelho</option>
+                    <option value="Celular">Celular</option>
+                    <option value="iPhone">iPhone</option>
+                    <option value="Tablet">Tablet</option>
+                    <option value="Notebook">Notebook</option>
+                    <option value="Computador">Computador</option>
+                    <option value="Videogame">Videogame</option>
+                    <option value="Outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="requestDeviceModel">
+                    Marca e modelo
+                </label>
+
+                <input
+                    type="text"
+                    id="requestDeviceModel"
+                    class="form-input"
+                    placeholder="Ex.: iPhone 13, Samsung A54">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="requestProblemType">
+                    Qual é o problema? <span class="required">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="requestProblemType"
+                    class="form-input"
+                    placeholder="Ex.: Tela quebrada, não liga..."
+                    required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="requestObservations">
+                    Descreva melhor o problema
+                </label>
+
+                <textarea
+                    id="requestObservations"
+                    class="form-textarea"
+                    placeholder="Informe detalhes do defeito ou outras observações..."
+                    rows="4"></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="closeModal('budgetRequestModal')">
+                    Cancelar
+                </button>
+
+                <button
+                    type="submit"
+                    id="submitBudgetRequestBtn"
+                    class="btn btn-primary">
+                    Enviar Solicitação
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
 
     <div
         class="modal-overlay"
