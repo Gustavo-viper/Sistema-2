@@ -15,6 +15,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             redirectToLogin();
             return;
         }
+        
+        const budgetRequestForm = document.getElementById('budgetRequestForm');
+
+if (budgetRequestForm) {
+    budgetRequestForm.addEventListener(
+        'submit',
+        submitBudgetRequest
+    );
+}
 
         const { data, error } =
             await supabaseClient.auth.getSession();
