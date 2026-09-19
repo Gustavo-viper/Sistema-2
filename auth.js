@@ -1,150 +1,600 @@
-var _supLib = (typeof window !== 'undefined') ? window.supabase : null;
-var SUPABASE_URL = 'https://ytghpftgeqnadecxsxgg.supabase.co';
-var SUPABASE_ANON_KEY = 'sb_publishable_N9FjpZBFCsWEiDNMF72eag_NpoDSKsI';
-var currentUser = null;
-var userProfile = null;
-var isAdminUser = false;
-var supabaseClient = null;
+
+/* =====================================================
+   GUSTAVO & EMILY - ASSISTÊNCIA TÉCNICA
+   AUTH.JS - AUTENTICAÇÃO SUPABASE
+   VERSÃO CORRIGIDA E ORGANIZADA
+===================================================== */
+
+/* =====================================================
+   CONFIGURAÇÃO DO SUPABASE
+===================================================== */
+
+const SUPABASE_URL = 'https://ytghpftgeqnadecxsxgg.supabase.co';
+
+const SUPABASE_ANON_KEY =
+  'sb_publishable_N9FjpZBFCsWEiDNMF72eag_NpoDSKsI';
+
+let currentUser = null;
+let userProfile = null;
+let isAdminUser = false;
+let supabaseClient = null;
+
+/* =====================================================
+   INICIALIZAÇÃO DO SUPABASE
+===================================================== */
 
 (function initSupabase() {
   try {
-    var lib = (_supLib&&_supLib.createClient)?_supLib:(window.supabaseClient&&window.supabaseClient.createClient?window.supabaseClient:null);
-    if (lib && lib.createClient) {
-      supabaseClient = lib.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      window.supabaseClient = supabaseClient;
+    const lib =
+      window.supabase && typeof window.supabase.createClient === 'function'
+        ? window.supabase
+        : null;
+
+    if (!lib) {
+      console.error('Biblioteca do Supabase não encontrada.');
+      return;
     }
-  } catch (e) { console.error('Supabase init:', e); }
+
+    supabaseClient = lib.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
+
+    // Disponibiliza o cliente globalmente
+    window.supabaseClient = supabaseClient;
+
+    console.log('Supabase inicializado com sucesso.');
+  } catch (error) {
+    console.error('Erro ao inicializar o Supabase:', error);
+  }
 })();
 
+/* =====================================================
+   VERIFICAR CONEXÃO
+===================================================== */
+
 function ensureAuth() {
-  if (supabaseClient) return true;
-  alert('Sem conexao com Supabase (CDN bloqueado). Verifique a internet e recarregue.');
+  if (supabaseClient) {
+    return true;
+  }
+
+  toastSafe(
+    'Erro',
+    'Não foi possível conectar ao Supabase. Verifique a internet e recarregue a página.',
+    'error'
+  );
+
   return false;
 }
 
-function toastSafe(t, m, type) {
-  if (typeof toast === 'function' && toast !== toastSafe) { try { toast(t, m, type); return; } catch (e) {} }
-  var c = document.getElementById('toastContainer');
-  if (!c) { alert(t + ': ' + m); return; }
-  var d = document.createElement('div');
-  d.className = 'toast ' + (type || 'info');
-  d.textContent = t + ' - ' + m;
-  c.appendChild(d);
-  setTimeout(function() { if (d.parentElement) d.remove(); }, 4000);
+/* =====================================================
+   SISTEMA DE NOTIFICAÇÕES
+===================================================== */
+
+function toastSafe(title, message, type = 'info') {
+  try {
+    if (
+      typeof window.toast === 'function' &&
+      window.toast !== toastSafe
+    ) {
+      window.toast(title, message, type);
+      return;
+    }
+  } catch (error) {
+    console.warn('Erro no sistema de notificações:', error);
+  }
+
+  const container = document.getElementById('toastContainer');
+
+  if (!container) {
+    alert(`${title}: ${message}`);
+    return;
+  }
+
+  const notification = document.createElement('div');
+
+  notification.className = `toast ${type}`;
+  notification.textContent = `${title} - ${message}`;
+
+  container.appendChild(notification);
+
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.remove();
+    }
+  }, 4000);
 }
+
+/* =====================================================
+   OBTER REDIRECIONAMENTO
+===================================================== */
 
 function getNext() {
   try {
-    var p = new URLSearchParams(window.location.search).get('next');
-    if (p) return p;
-  } catch (e) {}
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get('next');
+
+    // Permite apenas páginas locais simples
+    if (
+      next &&
+      !next.includes('://') &&
+      !next.startsWith('//') &&
+      !next.includes('..')
+    ) {
+      return next;
+    }
+  } catch (error) {
+    console.warn('Erro ao obter redirecionamento:', error);
+  }
+
   return '';
 }
 
-async function checkIsAdmin(uid) {
+/* =====================================================
+   VERIFICAR SE O USUÁRIO É ADMINISTRADOR
+===================================================== */
+
+async function checkIsAdmin(userId) {
+  if (!supabaseClient || !userId) {
+    return false;
+  }
+
+  // Primeiro, verifica a função RPC do banco de dados
   try {
-    var r = await supabaseClient.rpc('current_user_is_admin');
-    if (r.data === true) return true;
-  } catch (e) {}
+    const { data, error } = await supabaseClient.rpc(
+      'current_user_is_admin'
+    );
+
+    if (!error && data === true) {
+      return true;
+    }
+  } catch (error) {
+    console.warn('RPC de administrador indisponível:', error);
+  }
+
+  // Segundo, verifica o perfil do usuário
   try {
-    var em = (currentUser && currentUser.email || '').toLowerCase();
-    if (em === 'cainaoliveiraguga@gmail.com' || em === 'equintanilha56@gmail.com') return true;
-  } catch (e) {}
-  return false;
+    const { data: profile, error } = await supabaseClient
+      .from('profiles')
+      .select('role, tipo, is_admin')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && profile) {
+      if (
+        profile.role === 'admin' ||
+        profile.role === 'administrador' ||
+        profile.tipo === 'admin' ||
+        profile.tipo === 'administrador' ||
+        profile.is_admin === true
+      ) {
+        return true;
+      }
+    }
+  } catch (error) {
+    console.warn('Erro ao consultar perfil de administrador:', error);
+  }
+
+  /*
+    FALLBACK TEMPORÁRIO
+
+    O ideal é controlar administradores exclusivamente
+    pelo banco de dados, com RLS e funções seguras.
+  */
+
+  const email = (currentUser?.email || '').toLowerCase();
+
+  const adminEmails = [
+    'cainaoliveiraguga@gmail.com',
+    'equintanilha56@gmail.com'
+  ];
+
+  return adminEmails.includes(email);
 }
 
-async function afterLogin() {
-  var s = await supabaseClient.auth.getSession();
-  currentUser = s.data.session ? s.data.session.user : null;
-  if (!currentUser) { window.location.href = 'login.html'; return; }
-  await loadUserProfile();
-  isAdminUser = await checkIsAdmin(currentUser.id);
-  var nx = getNext();
-  if (nx) { window.location.href = nx; return; }
-  window.location.href = isAdminUser ? 'index.html' : 'client.html';
-}
+/* =====================================================
+   CARREGAR PERFIL DO USUÁRIO
+===================================================== */
 
 async function loadUserProfile() {
-  if (!supabase || !currentUser) return null;
+  if (!supabaseClient || !currentUser) {
+    userProfile = null;
+    return null;
+  }
+
   try {
-    var r = await supabaseClient.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
-    userProfile = r.data || null;
-  } catch (e) { userProfile = null; }
-  return userProfile;
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .select('*')
+      .eq('id', currentUser.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro ao carregar perfil:', error);
+      userProfile = null;
+      return null;
+    }
+
+    userProfile = data || null;
+
+    return userProfile;
+  } catch (error) {
+    console.error('Erro inesperado ao carregar perfil:', error);
+    userProfile = null;
+    return null;
+  }
 }
 
-async function handleLogin(e) {
-  if (e) e.preventDefault();
-  if (!ensureAuth()) return;
-  var email = document.getElementById('loginEmail').value.trim();
-  var pass = document.getElementById('loginPassword').value;
-  if (!email || !pass) { toastSafe('Atenção', 'Preencha e-mail e senha', 'warning'); return; }
-  var btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
-  var res = await supabaseClient.auth.signInWithPassword({ email: email, password: pass });
-  if (btn) { btn.disabled = false; btn.textContent = 'Entrar'; }
-  if (res.error) { toastSafe('Erro no login', res.error.message, 'error'); return; }
-  toastSafe('Bem-vindo!', 'Login realizado.', 'success');
-  await afterLogin();
+/* =====================================================
+   APÓS O LOGIN
+===================================================== */
+
+async function afterLogin() {
+  if (!ensureAuth()) {
+    return;
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      throw error;
+    }
+
+    currentUser = data?.session?.user || null;
+
+    if (!currentUser) {
+      window.location.href = 'login.html';
+      return;
+    }
+
+    await loadUserProfile();
+
+    isAdminUser = await checkIsAdmin(currentUser.id);
+
+    const nextPage = getNext();
+
+    if (nextPage) {
+      window.location.href = nextPage;
+      return;
+    }
+
+    window.location.href = isAdminUser
+      ? 'index.html'
+      : 'client.html';
+
+  } catch (error) {
+    console.error('Erro após login:', error);
+
+    toastSafe(
+      'Erro',
+      'Não foi possível carregar os dados da conta.',
+      'error'
+    );
+  }
 }
 
-async function handleRegister(e) {
-  if (e) e.preventDefault();
-  if (!ensureAuth()) return;
-  var name = document.getElementById('registerName').value.trim();
-  var email = document.getElementById('registerEmail').value.trim();
-  var phoneEl = document.getElementById('registerPhone');
-  var phone = phoneEl ? phoneEl.value.trim() : '';
-  var pass = document.getElementById('registerPassword').value;
-  var conf = document.getElementById('registerConfirm').value;
-  if (!name || !email || !pass) { toastSafe('Atenção', 'Preencha nome, e-mail e senha', 'warning'); return; }
-  if (pass.length < 6) { toastSafe('Atenção', 'Senha mínimo 6 caracteres', 'warning'); return; }
-  if (pass !== conf) { toastSafe('Atenção', 'Senhas não conferem', 'warning'); return; }
-  var btn = document.getElementById('registerBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Criando...'; }
-  console.log('[register] tentando criar conta:', email);
-  var res;
+/* =====================================================
+   LOGIN
+===================================================== */
+
+async function handleLogin(event) {
+  if (event) {
+    event.preventDefault();
+  }
+
+  if (!ensureAuth()) {
+    return;
+  }
+
+  const emailElement = document.getElementById('loginEmail');
+  const passwordElement = document.getElementById('loginPassword');
+
+  if (!emailElement || !passwordElement) {
+    toastSafe(
+      'Erro',
+      'Campos de login não encontrados no HTML.',
+      'error'
+    );
+    return;
+  }
+
+  const email = emailElement.value.trim().toLowerCase();
+  const password = passwordElement.value;
+
+  if (!email || !password) {
+    toastSafe(
+      'Atenção',
+      'Preencha o e-mail e a senha.',
+      'warning'
+    );
+    return;
+  }
+
+  const button = document.getElementById('loginBtn');
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Entrando...';
+  }
+
   try {
-    res = await supabaseClient.auth.signUp({ email: email, password: pass, options: { data: { name: name, phone: phone } } });
-  } catch (err) {
-    console.error('[register] excecao:', err);
-    if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
-    toastSafe('Erro ao criar conta', String(err && err.message || err), 'error');
-    return;
-  }
-  console.log('[register] resposta:', JSON.stringify(res));
-  if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
-  if (res.error) {
-    console.error('[register] erro supabase:', res.error);
-    toastSafe('Erro ao criar conta (' + (res.error.status || '?') + ')', res.error.message, 'error');
-    alert('Erro ao criar conta: ' + res.error.message);
-    return;
-  }
-  if (res.data.session) {
-    toastSafe('Conta criada!', 'Bem-vindo, ' + name, 'success');
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    currentUser = data?.user || data?.session?.user || null;
+
+    toastSafe(
+      'Bem-vindo!',
+      'Login realizado com sucesso.',
+      'success'
+    );
+
     await afterLogin();
-  } else {
-    toastSafe('Conta criada!', 'Verifique seu e-mail para confirmar e faça login.', 'success');
-    if (typeof window.switchTab === 'function') window.switchTab('login');
+
+  } catch (error) {
+    console.error('Erro no login:', error);
+
+    toastSafe(
+      'Erro no login',
+      traduzirErroAuth(error),
+      'error'
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Entrar';
+    }
   }
 }
+
+/* =====================================================
+   CADASTRO
+===================================================== */
+
+async function handleRegister(event) {
+  if (event) {
+    event.preventDefault();
+  }
+
+  if (!ensureAuth()) {
+    return;
+  }
+
+  const nameElement = document.getElementById('registerName');
+  const emailElement = document.getElementById('registerEmail');
+  const phoneElement = document.getElementById('registerPhone');
+  const passwordElement = document.getElementById('registerPassword');
+  const confirmElement = document.getElementById('registerConfirm');
+
+  if (!nameElement || !emailElement || !passwordElement || !confirmElement) {
+    toastSafe(
+      'Erro',
+      'Campos de cadastro não encontrados no HTML.',
+      'error'
+    );
+    return;
+  }
+
+  const name = nameElement.value.trim();
+  const email = emailElement.value.trim().toLowerCase();
+  const phone = phoneElement ? phoneElement.value.trim() : '';
+  const password = passwordElement.value;
+  const confirmation = confirmElement.value;
+
+  if (!name || !email || !password || !confirmation) {
+    toastSafe(
+      'Atenção',
+      'Preencha todos os campos obrigatórios.',
+      'warning'
+    );
+    return;
+  }
+
+  if (password.length < 6) {
+    toastSafe(
+      'Atenção',
+      'A senha deve ter pelo menos 6 caracteres.',
+      'warning'
+    );
+    return;
+  }
+
+  if (password !== confirmation) {
+    toastSafe(
+      'Atenção',
+      'As senhas não conferem.',
+      'warning'
+    );
+    return;
+  }
+
+  const button = document.getElementById('registerBtn');
+
+  if (button) {
+    button.disabled = true;
+    button.textContent = 'Criando...';
+  }
+
+  try {
+    console.log('[Cadastro] Criando conta:', email);
+
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          phone
+        }
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    console.log('[Cadastro] Conta criada com sucesso.');
+
+    if (data?.session) {
+      currentUser = data.user || data.session.user;
+
+      toastSafe(
+        'Conta criada!',
+        `Bem-vindo, ${name}!`,
+        'success'
+      );
+
+      await afterLogin();
+    } else {
+      toastSafe(
+        'Cadastro realizado!',
+        'Verifique seu e-mail para confirmar a conta.',
+        'success'
+      );
+
+      if (typeof window.switchTab === 'function') {
+        window.switchTab('login');
+      }
+    }
+
+  } catch (error) {
+    console.error('[Cadastro] Erro:', error);
+
+    toastSafe(
+      'Erro ao criar conta',
+      traduzirErroAuth(error),
+      'error'
+    );
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = 'Criar Conta';
+    }
+  }
+}
+
+/* =====================================================
+   RECUPERAR SENHA
+===================================================== */
 
 async function showForgotPassword() {
-  if (!ensureAuth()) return;
-  var em = prompt('Digite seu e-mail para recuperar a senha:');
-  if (!em) return;
-  var res = await supabaseClient.auth.resetPasswordForEmail(em.trim());
-  if (res.error) toastSafe('Erro', res.error.message, 'error');
-  else toastSafe('Enviado!', 'Verifique seu e-mail.', 'success');
+  if (!ensureAuth()) {
+    return;
+  }
+
+  const email = prompt(
+    'Digite seu e-mail para recuperar a senha:'
+  );
+
+  if (!email || !email.trim()) {
+    return;
+  }
+
+  try {
+    const { error } =
+      await supabaseClient.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        {
+          redirectTo: `${window.location.origin}/reset-password.html`
+        }
+      );
+
+    if (error) {
+      throw error;
+    }
+
+    toastSafe(
+      'E-mail enviado!',
+      'Verifique sua caixa de entrada.',
+      'success'
+    );
+
+  } catch (error) {
+    console.error('Erro ao recuperar senha:', error);
+
+    toastSafe(
+      'Erro',
+      traduzirErroAuth(error),
+      'error'
+    );
+  }
 }
 
+/* =====================================================
+   LOGOUT
+===================================================== */
+
 async function logout() {
-  try { if (supabase) await supabaseClient.auth.signOut(); } catch (e) {}
-  currentUser = null; userProfile = null; isAdminUser = false;
-  window.location.href = 'login.html';
+  try {
+    if (supabaseClient) {
+      const { error } = await supabaseClient.auth.signOut();
+
+      if (error) {
+        console.error('Erro ao sair:', error);
+      }
+    }
+  } catch (error) {
+    console.error('Erro inesperado ao sair:', error);
+  } finally {
+    currentUser = null;
+    userProfile = null;
+    isAdminUser = false;
+
+    window.location.href = 'login.html';
+  }
 }
+
+/* =====================================================
+   TRADUZIR ERROS DO SUPABASE
+===================================================== */
+
+function traduzirErroAuth(error) {
+  const message = String(error?.message || '').toLowerCase();
+
+  if (message.includes('invalid login credentials')) {
+    return 'E-mail ou senha incorretos.';
+  }
+
+  if (message.includes('email not confirmed')) {
+    return 'Confirme seu e-mail antes de entrar.';
+  }
+
+  if (message.includes('user already registered')) {
+    return 'Este e-mail já está cadastrado.';
+  }
+
+  if (message.includes('email rate limit exceeded')) {
+    return 'Limite de envio de e-mails atingido. Aguarde e tente novamente mais tarde.';
+  }
+
+  if (message.includes('password should be at least')) {
+    return 'A senha deve ter pelo menos 6 caracteres.';
+  }
+
+  if (message.includes('email')) {
+    return 'Informe um endereço de e-mail válido.';
+  }
+
+  return error?.message || 'Ocorreu um erro inesperado.';
+}
+
+/* =====================================================
+   DISPONIBILIZAR FUNÇÕES GLOBALMENTE
+===================================================== */
+
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
 window.showForgotPassword = showForgotPassword;
 window.logout = logout;
 window.loadUserProfile = loadUserProfile;
+window.afterLogin = afterLogin;
+window.checkIsAdmin = checkIsAdmin;
+window.ensureAuth = ensureAuth;
+window.supabaseClient = supabaseClient;
