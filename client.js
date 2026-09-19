@@ -1,4 +1,4 @@
-
+    
 /* =====================================================
    GUSTAVO & EMILY - ASSISTÊNCIA TÉCNICA
    CLIENT.JS - PAINEL DO CLIENTE
@@ -483,13 +483,115 @@ async function loadClientHistory() {
    SOLICITAR ORÇAMENTO
 ===================================================== */
 
-async function requestBudget() {
-    toastSafe(
-        'Em desenvolvimento',
-        'Em breve você poderá solicitar orçamentos pelo painel.',
-        'info'
-    );
+
+/* =====================================================
+   SOLICITAÇÃO DE ORÇAMENTO PELO CLIENTE
+===================================================== */
+
+function requestBudget() {
+    const modal = document.getElementById('budgetRequestModal');
+
+    if (!modal) {
+        toast(
+            'Erro',
+            'Formulário de orçamento não encontrado.',
+            'error'
+        );
+        return;
+    }
+
+    modal.classList.add('active');
+    modal.setAttribute('aria-hidden', 'false');
 }
+
+async function submitBudgetRequest(event) {
+    event.preventDefault();
+
+    if (!supabaseClient || !currentUser) {
+        toast(
+            'Erro',
+            'Sua sessão expirou. Faça login novamente.',
+            'error'
+        );
+        return;
+    }
+
+    const deviceType = document
+        .getElementById('requestDeviceType')
+        .value
+        .trim();
+
+    const deviceModel = document
+        .getElementById('requestDeviceModel')
+        .value
+        .trim();
+
+    const problemType = document
+        .getElementById('requestProblemType')
+        .value
+        .trim();
+
+    const observations = document
+        .getElementById('requestObservations')
+        .value
+        .trim();
+
+    if (!deviceType || !problemType) {
+        toast(
+            'Atenção',
+            'Preencha o tipo de aparelho e o problema.',
+            'warning'
+        );
+        return;
+    }
+
+    const button = document.getElementById('submitBudgetRequestBtn');
+
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Enviando...';
+    }
+
+    try {
+        const { error } = await supabaseClient
+            .from('budget_requests')
+            .insert({
+                user_id: currentUser.id,
+                device_type: deviceType,
+                device_model: deviceModel || null,
+                problem_type: problemType,
+                observations: observations || null
+            });
+
+        if (error) {
+            throw error;
+        }
+
+        toast(
+            'Solicitação enviada!',
+            'Nossa equipe analisará seu pedido em breve.',
+            'success'
+        );
+
+        document.getElementById('budgetRequestForm').reset();
+        closeModal('budgetRequestModal');
+
+    } catch (error) {
+        console.error('Erro ao solicitar orçamento:', error);
+
+        toast(
+            'Erro ao enviar',
+            error.message || 'Não foi possível enviar sua solicitação.',
+            'error'
+        );
+    } finally {
+        if (button) {
+            button.disabled = false;
+            button.textContent = 'Enviar Solicitação';
+        }
+    }
+}
+
 
 /* =====================================================
    NAVEGAÇÃO
