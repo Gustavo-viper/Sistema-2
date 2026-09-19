@@ -1,222 +1,954 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Assistência Técnica Gustavo & Emily</title>
+
+    <meta name="theme-color" content="#05070d">
+    <meta name="description" content="Painel administrativo da Gustavo & Emily Assistência Técnica">
+
+    <title>Painel Administrativo | Gustavo & Emily</title>
+
     <link rel="stylesheet" href="style.css">
+
     <style>
-        .header-actions { display: flex; align-items: center; gap: 1rem; }
-        .auth-btn { background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 8px; text-decoration: none; font-weight: 600; white-space: nowrap; }
-        .auth-btn:hover { background: #1d4ed8; }
-        .lock-screen { position: fixed; inset: 0; background: linear-gradient(135deg, #f0f4ff 0%, #e6edf7 100%); display: flex; align-items: center; justify-content: center; z-index: 5000; }
-        .lock-box { background: white; border-radius: 16px; padding: 2.5rem; max-width: 380px; width: 90%; text-align: center; box-shadow: 0 20px 25px rgba(0,0,0,0.1); }
-        .lock-box .logo-icon { width: 64px; height: 64px; margin: 0 auto 1rem; }
-        .lock-box h2 { margin: 0 0 0.5rem; }
-        .lock-box p { color: #6b7280; font-size: 0.9375rem; margin: 0 0 1.5rem; }
-        .hidden { display: none !important; }
-.normalize-search .search-input { margin-bottom: 0; }
+        /* =====================================================
+           ESTILOS DO PAINEL ADMINISTRATIVO
+        ===================================================== */
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .auth-btn {
+            background: #2563eb;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background 0.2s ease;
+        }
+
+        .auth-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .lock-screen {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(135deg, #f0f4ff, #e6edf7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+            padding: 1rem;
+        }
+
+        .lock-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .lock-box .logo-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1rem;
+        }
+
+        .lock-box h2 {
+            margin: 0 0 0.5rem;
+        }
+
+        .lock-box p {
+            color: #6b7280;
+            font-size: 0.9375rem;
+            margin: 0 0 1.5rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .header-date {
+            white-space: nowrap;
+        }
+
+        .admin-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 350px;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .search-box .search-input {
+            flex: 1;
+            min-width: 0;
+            margin-bottom: 0;
+        }
+
+        .search-results {
+            margin-top: 0.5rem;
+        }
+
+        .payment-section {
+            margin: 1.5rem 0;
+        }
+
+        .payment-link-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            background: rgba(37, 99, 235, 0.06);
+            margin-top: 0.75rem;
+        }
+
+        .payment-link-icon {
+            font-size: 1.5rem;
+        }
+
+        .payment-link-label {
+            font-size: 0.9rem;
+        }
+
+        .payment-link-url {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-container table {
+            min-width: 850px;
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .section-heading > div:last-child {
+            min-width: 0;
+        }
+
+        @media (max-width: 900px) {
+            .admin-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .header-actions {
+                gap: 0.5rem;
+            }
+
+            .header-date {
+                display: none;
+            }
+
+            .lock-box {
+                padding: 2rem 1.5rem;
+            }
+
+            .search-box {
+                flex-wrap: wrap;
+            }
+
+            .payment-link-box {
+                align-items: flex-start;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-btn {
+                transition: none;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <!-- Bloqueio até confirmar login admin -->
-    <div class="lock-screen" id="lockScreen">
+
+    <!-- =====================================================
+         TELA DE BLOQUEIO
+    ===================================================== -->
+
+    <div
+        class="lock-screen"
+        id="lockScreen"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lockTitle">
+
         <div class="lock-box">
-            <div class="logo-icon">GE</div>
-            <h2>Área Restrita</h2>
-            <p>Faça login com a conta de administrador para acessar o painel.</p>
-            <a href="login.html?next=index.html" class="btn btn-primary btn-lg btn-block">Entrar como Admin</a>
-            <a href="login.html?tab=register" class="btn btn-success btn-lg btn-block" style="margin-top:0.75rem;">Criar Conta de Cliente</a>
+
+            <div
+                class="logo-icon"
+                aria-hidden="true">
+
+                GE
+
+            </div>
+
+            <h2 id="lockTitle">Área Restrita</h2>
+
+            <p>
+                Faça login com uma conta de administrador
+                para acessar o painel.
+            </p>
+
+            <a
+                href="login.html?next=index.html"
+                class="btn btn-primary btn-lg btn-block">
+
+                Entrar como Admin
+
+            </a>
+
+            <a
+                href="login.html?tab=register"
+                class="btn btn-success btn-lg btn-block"
+                style="margin-top: 0.75rem;">
+
+                Criar Conta de Cliente
+
+            </a>
+
         </div>
+
     </div>
+
+    <!-- =====================================================
+         APLICAÇÃO ADMINISTRATIVA
+    ===================================================== -->
 
     <div id="adminApp" class="hidden">
-    <header class="header">
-        <a href="#" class="logo">
-            <div class="logo-icon">GE</div>
-            <div class="logo-text">
-                <h1>Assistência Técnica Gustavo & Emily</h1>
-                <span>Celulares e Computadores</span>
-            </div>
-        </a>
-        <div class="header-actions">
-            <div class="header-date"><span id="currentDate"></span></div>
-            <a href="client.html" class="auth-btn">👤 Meu Painel</a>
-            <button class="btn btn-secondary" onclick="logout()">Sair</button>
-        </div>
-    </header>
-    <main class="container">
-        <section class="section" style="margin-bottom:2rem;">
-            <div class="stats-grid" id="statsGrid"></div>
-        </section>
-        <div style="display:grid;grid-template-columns:1fr 350px;gap:2rem;">
-            <section class="section">
-                <div class="section-header">
-                    <div class="section-icon">📱</div>
-                    <div><h2 class="section-title">Novo Orçamento</h2><p class="section-subtitle">Crie orçamentos automáticos</p></div>
+
+        <!-- CABEÇALHO -->
+
+        <header class="header">
+
+            <a
+                href="index.html"
+                class="logo"
+                aria-label="Página inicial do painel administrativo">
+
+                <div class="logo-icon" aria-hidden="true">GE</div>
+
+                <div class="logo-text">
+                    <h1>Assistência Técnica Gustavo & Emily</h1>
+                    <span>Celulares e Computadores</span>
                 </div>
-                <div id="budgetAlerts"></div>
-                <form id="budgetForm">
-                    <div class="form-group">
-                        <label class="form-label">Buscar Cliente <span class="required">*</span></label>
-                        <div class="search-box">
-                            <input type="text" class="search-input" id="clientSearch" placeholder="Nome, telefone ou email...">
-                            <button type="button" class="search-btn" onclick="searchClients()">Buscar</button>
-                        </div>
-                        <div class="search-results" id="searchResults" style="display:none;"></div>
-                        <div id="selectedClient" style="display:none;margin-top:1rem;"></div>
-                        <div class="form-error" id="clientError">Selecione um cliente</div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label class="form-label">Aparelho <span class="required">*</span></label>
-                            <select class="form-select" id="deviceType" required>
-                                <option value="">Selecione...</option>
-                                <optgroup label="Celulares">
-                                    <option value="iPhone">iPhone</option>
-                                    <option value="Samsung Galaxy">Samsung Galaxy</option>
-                                    <option value="Xiaomi">Xiaomi</option>
-                                    <option value="Motorola">Motorola</option>
-                                    <option value="Outro">Outro</option>
-                                </optgroup>
-                                <optgroup label="Computadores">
-                                    <option value="PC">PC Desktop</option>
-                                    <option value="Notebook">Notebook</option>
-                                    <option value="MacBook">MacBook</option>
-                                    <option value="Outro">Outro</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Problema <span class="required">*</span></label>
-                            <select class="form-select" id="problemType" required>
-                                <option value="">Selecione...</option>
-                                <optgroup label="Tela">
-                                    <option value="Tela Quebrada">Tela Quebrada</option>
-                                    <option value="Tela Manchas">Tela com Manchas</option>
-                                    <option value="Display">Display Defeituoso</option>
-                                </optgroup>
-                                <optgroup label="Bateria">
-                                    <option value="Bateria">Bateria Dura Pouco</option>
-                                    <option value="Expandida">Bateria Expandida</option>
-                                    <option value="Carrega">Não Carrega</option>
-                                </optgroup>
-                                <optgroup label="Áudio">
-                                    <option value="Som">Sem Som</option>
-                                    <option value="Voz">Voz Baixa</option>
-                                </optgroup>
-                                <optgroup label="Software">
-                                    <option value="Virus">Vírus/Malware</option>
-                                    <option value="Lento">Lento</option>
-                                    <option value="Dados">Restauração de Dados</option>
-                                    <option value="Chip">Ativar/Chip</option>
-                                </optgroup>
-                                <optgroup label="Hardware">
-                                    <option value="Camera">Câmera</option>
-                                    <option value="Agua">Dano por Água</option>
-                                </optgroup>
-                                <optgroup label="PC">
-                                    <option value="SO">Reinstalar SO</option>
-                                    <option value="Limpeza">Limpeza Interna</option>
-                                    <option value="SSD">Troca HD/SSD</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Modelo</label><input type="text" class="form-input" id="deviceModel" placeholder="Ex: iPhone 13..."></div>
-                        <div class="form-group"><label class="form-label">Valor Estimado</label><input type="number" class="form-input" id="estimatedValue" placeholder="R$ 0,00" min="0" step="0.01"><div class="form-hint">Preenchido automaticamente</div></div>
-                    </div>
-                    <div class="form-group"><label class="form-label">Observações</label><textarea class="form-textarea" id="observations" placeholder="Especificações adicionais..."></textarea></div>
-                    <div class="payment-section">
-                        <h4>Como funciona o pagamento:</h4>
-                        <div class="payment-link-box">
-                            <div class="payment-link-icon">💳</div>
-                            <div class="payment-link-info">
-                                <div class="payment-link-label"><strong>50%</strong> como <strong>sinal</strong> na aprovação do orçamento</div>
-                                <div class="payment-link-url">Link de pagamento será gerado automaticamente</div>
-                            </div>
-                        </div>
-                        <div class="payment-link-box">
-                            <div class="payment-link-icon">✅</div>
-                            <div class="payment-link-info">
-                                <div class="payment-link-label"><strong>50%</strong> restante no <strong>ato da entrega</strong> do aparelho</div>
-                                <div class="payment-link-url">Link será enviado quando o serviço for concluído</div>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg btn-block" id="submitBudgetBtn">Gerar Orçamento Automático</button>
-                </form>
-            </section>
-            <section class="section">
-                <div class="section-header">
-                    <div class="section-icon secondary">👥</div>
-                    <div><h2 class="section-title">Clientes</h2><p class="section-subtitle">Clientes cadastrados</p></div>
+
+            </a>
+
+            <div class="header-actions">
+
+                <div class="header-date">
+                    <span id="currentDate"></span>
                 </div>
-                <button class="btn btn-sm btn-secondary" onclick="showAddClientForm()" style="margin-bottom:1rem;">+ Novo Cliente</button>
-                <div id="recentClients"></div>
-                <div id="noClientsMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum cliente cadastrado</p></div>
+
+                <a
+                    href="client.html"
+                    class="auth-btn">
+
+                    👤 Meu Painel
+
+                </a>
+
+                <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="logout()">
+
+                    Sair
+
+                </button>
+
+            </div>
+
+        </header>
+
+        <!-- CONTEÚDO PRINCIPAL -->
+
+        <main class="container">
+
+            <!-- ESTATÍSTICAS -->
+
+            <section
+                class="section"
+                style="margin-bottom: 2rem;"
+                aria-label="Estatísticas do sistema">
+
+                <div
+                    class="stats-grid"
+                    id="statsGrid">
+
+                </div>
+
             </section>
-        </div>
-        <section class="section" style="margin-top:2rem;">
-            <div class="section-header">
-                <div class="section-icon warning">⚡</div>
-                <div><h2 class="section-title">Serviços em Andamento</h2><p class="section-subtitle">Orçamentos aprovados</p></div>
+
+            <!-- ORÇAMENTO E CLIENTES -->
+
+            <div class="admin-layout">
+
+                <!-- NOVO ORÇAMENTO -->
+
+                <section class="section">
+
+                    <div class="section-header section-heading">
+
+                        <div class="section-icon">📱</div>
+
+                        <div>
+                            <h2 class="section-title">
+                                Novo Orçamento
+                            </h2>
+
+                            <p class="section-subtitle">
+                                Crie orçamentos automáticos
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <div id="budgetAlerts"></div>
+
+                    <form id="budgetForm">
+
+                        <!-- CLIENTE -->
+
+                        <div class="form-group">
+
+                            <label
+                                class="form-label"
+                                for="clientSearch">
+
+                                Buscar Cliente
+                                <span class="required">*</span>
+
+                            </label>
+
+                            <div class="search-box">
+
+                                <input
+                                    type="text"
+                                    class="search-input"
+                                    id="clientSearch"
+                                    placeholder="Nome, telefone ou e-mail..."
+                                    autocomplete="off">
+
+                                <button
+                                    type="button"
+                                    class="search-btn"
+                                    onclick="searchClients()">
+
+                                    Buscar
+
+                                </button>
+
+                            </div>
+
+                            <div
+                                class="search-results"
+                                id="searchResults"
+                                style="display: none;">
+
+                            </div>
+
+                            <div
+                                id="selectedClient"
+                                style="display: none; margin-top: 1rem;">
+
+                            </div>
+
+                            <div
+                                class="form-error"
+                                id="clientError">
+
+                                Selecione um cliente.
+
+                            </div>
+
+                        </div>
+
+                        <!-- APARELHO E PROBLEMA -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label
+                                    class="form-label"
+                                    for="deviceType">
+
+                                    Aparelho
+                                    <span class="required">*</span>
+
+                                </label>
+
+                                <select
+                                    class="form-select"
+                                    id="deviceType"
+                                    required>
+
+                                    <option value="">
+                                        Selecione...
+                                    </option>
+
+                                    <optgroup label="Celulares">
+                                        <option value="iPhone">iPhone</option>
+                                        <option value="Samsung Galaxy">
+                                            Samsung Galaxy
+                                        </option>
+                                        <option value="Xiaomi">Xiaomi</option>
+                                        <option value="Motorola">Motorola</option>
+                                        <option value="Outro">Outro</option>
+                                    </optgroup>
+
+                                    <optgroup label="Computadores">
+                                        <option value="PC">
+                                            PC Desktop
+                                        </option>
+                                        <option value="Notebook">
+                                            Notebook
+                                        </option>
+                                        <option value="MacBook">
+                                            MacBook
+                                        </option>
+                                        <option value="Outro">
+                                            Outro
+                                        </option>
+                                    </optgroup>
+
+                                </select>
+
+                            </div>
+
+                            <div class="form-group">
+
+                                <label
+                                    class="form-label"
+                                    for="problemType">
+
+                                    Problema
+                                    <span class="required">*</span>
+
+                                </label>
+
+                                <select
+                                    class="form-select"
+                                    id="problemType"
+                                    required>
+
+                                    <option value="">
+                                        Selecione...
+                                    </option>
+
+                                    <optgroup label="Tela">
+                                        <option value="Tela Quebrada">
+                                            Tela Quebrada
+                                        </option>
+                                        <option value="Tela Manchas">
+                                            Tela com Manchas
+                                        </option>
+                                        <option value="Display">
+                                            Display Defeituoso
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Bateria">
+                                        <option value="Bateria">
+                                            Bateria Dura Pouco
+                                        </option>
+                                        <option value="Expandida">
+                                            Bateria Expandida
+                                        </option>
+                                        <option value="Carrega">
+                                            Não Carrega
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Áudio">
+                                        <option value="Som">
+                                            Sem Som
+                                        </option>
+                                        <option value="Voz">
+                                            Voz Baixa
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Software">
+                                        <option value="Virus">
+                                            Vírus/Malware
+                                        </option>
+                                        <option value="Lento">
+                                            Lento
+                                        </option>
+                                        <option value="Dados">
+                                            Restauração de Dados
+                                        </option>
+                                        <option value="Chip">
+                                            Ativar/Chip
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="Hardware">
+                                        <option value="Camera">
+                                            Câmera
+                                        </option>
+                                        <option value="Agua">
+                                            Dano por Água
+                                        </option>
+                                    </optgroup>
+
+                                    <optgroup label="PC">
+                                        <option value="SO">
+                                            Reinstalar SO
+                                        </option>
+                                        <option value="Limpeza">
+                                            Limpeza Interna
+                                        </option>
+                                        <option value="SSD">
+                                            Troca HD/SSD
+                                        </option>
+                                    </optgroup>
+
+                                </select>
+
+                            </div>
+
+                        </div>
+
+                        <!-- MODELO E VALOR -->
+
+                        <div class="form-row">
+
+                            <div class="form-group">
+
+                                <label
+                                    class="form-label"
+                                    for="deviceModel">
+
+                                    Modelo
+
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    id="deviceModel"
+                                    placeholder="Ex.: iPhone 13..."
+                                    maxlength="150">
+
+                            </div>
+
+                            <div class="form-group">
+
+                                <label
+                                    class="form-label"
+                                    for="estimatedValue">
+
+                                    Valor Estimado
+
+                                </label>
+
+                                <input
+                                    type="number"
+                                    class="form-input"
+                                    id="estimatedValue"
+                                    placeholder="R$ 0,00"
+                                    min="0"
+                                    step="0.01"
+                                    inputmode="decimal">
+
+                                <div class="form-hint">
+                                    Preenchido automaticamente
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- OBSERVAÇÕES -->
+
+                        <div class="form-group">
+
+                            <label
+                                class="form-label"
+                                for="observations">
+
+                                Observações
+
+                            </label>
+
+                            <textarea
+                                class="form-textarea"
+                                id="observations"
+                                placeholder="Especificações adicionais..."
+                                rows="4"
+                                maxlength="2000">
+
+                            </textarea>
+
+                        </div>
+
+                        <!-- PAGAMENTO -->
+
+                        <div class="payment-section">
+
+                            <h4>Como funciona o pagamento:</h4>
+
+                            <div class="payment-link-box">
+
+                                <div
+                                    class="payment-link-icon"
+                                    aria-hidden="true">
+
+                                    💳
+
+                                </div>
+
+                                <div class="payment-link-info">
+
+                                    <div class="payment-link-label">
+                                        <strong>50%</strong>
+                                        como <strong>sinal</strong>
+                                        na aprovação do orçamento.
+                                    </div>
+
+                                    <div class="payment-link-url">
+                                        O link será gerado após a integração
+                                        com o provedor de pagamentos.
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div class="payment-link-box">
+
+                                <div
+                                    class="payment-link-icon"
+                                    aria-hidden="true">
+
+                                    ✅
+
+                                </div>
+
+                                <div class="payment-link-info">
+
+                                    <div class="payment-link-label">
+                                        <strong>50%</strong> restantes
+                                        no <strong>ato da entrega</strong>.
+                                    </div>
+
+                                    <div class="payment-link-url">
+                                        O link será disponibilizado quando
+                                        o serviço estiver concluído.
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!-- ENVIAR ORÇAMENTO -->
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary btn-lg btn-block"
+                            id="submitBudgetBtn">
+
+                            Gerar Orçamento Automático
+
+                        </button>
+
+                    </form>
+
+                </section>
+
+                <!-- CLIENTES -->
+
+                <section class="section">
+
+                    <div class="section-header section-heading">
+
+                        <div class="section-icon secondary">
+                            👥
+                        </div>
+
+                        <div>
+                            <h2 class="section-title">
+                                Clientes
+                            </h2>
+
+                            <p class="section-subtitle">
+                                Clientes cadastrados
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="btn btn-sm btn-secondary"
+                        onclick="showAddClientForm()"
+                        style="margin-bottom: 1rem;">
+
+                        + Novo Cliente
+
+                    </button>
+
+                    <div id="recentClients"></div>
+
+                    <div
+                        id="noClientsMessage"
+                        class="text-center text-muted"
+                        style="padding: 2rem;">
+
+                        <p>Nenhum cliente cadastrado.</p>
+
+                    </div>
+
+                </section>
+
             </div>
-            <div class="search-box">
-                <input type="text" class="search-input" id="serviceSearch" placeholder="Buscar..." oninput="filterServices()">
-                <select class="form-select" id="filterStatus" style="width:150px;" onchange="filterServices()">
-                    <option value="all">Todos</option>
-                    <option value="pending">Aguardando</option>
-                    <option value="processing">Em Andamento</option>
-                    <option value="ready">Pronto</option>
-                    <option value="completed">Concluído</option>
-                </select>
-            </div>
-            <div id="servicesList"></div>
-            <div id="noServicesMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum serviço</p></div>
-        </section>
-        <section class="section" style="margin-top:2rem;">
-            <div class="section-header">
-                <div class="section-icon danger">📋</div>
-                <div><h2 class="section-title">Histórico de Serviços</h2><p class="section-subtitle">Todos os serviços</p></div>
-            </div>
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Aparelho</th>
-                            <th>Problema</th>
-                            <th>Orçamento</th>
-                            <th>Sinal</th>
-                            <th>Restante</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="servicesTableBody"></tbody>
-                </table>
-            </div>
-            <div id="noHistoryMessage" class="text-center text-muted" style="padding:2rem;"><p>Nenhum serviço no histórico</p></div>
-        </section>
-    </main>
+
+            <!-- SERVIÇOS EM ANDAMENTO -->
+
+            <section
+                class="section"
+                style="margin-top: 2rem;">
+
+                <div class="section-header section-heading">
+
+                    <div class="section-icon warning">
+                        ⚡
+                    </div>
+
+                    <div>
+                        <h2 class="section-title">
+                            Serviços em Andamento
+                        </h2>
+
+                        <p class="section-subtitle">
+                            Orçamentos aprovados
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="search-box">
+
+                    <input
+                        type="text"
+                        class="search-input"
+                        id="serviceSearch"
+                        placeholder="Buscar..."
+                        oninput="filterServices()">
+
+                    <select
+                        class="form-select"
+                        id="filterStatus"
+                        onchange="filterServices()"
+                        style="width: 150px;">
+
+                        <option value="all">Todos</option>
+                        <option value="pending">Aguardando</option>
+                        <option value="processing">Em Andamento</option>
+                        <option value="ready">Pronto</option>
+                        <option value="completed">Concluído</option>
+
+                    </select>
+
+                </div>
+
+                <div id="servicesList"></div>
+
+                <div
+                    id="noServicesMessage"
+                    class="text-center text-muted"
+                    style="padding: 2rem;">
+
+                    <p>Nenhum serviço.</p>
+
+                </div>
+
+            </section>
+
+            <!-- HISTÓRICO DE SERVIÇOS -->
+
+            <section
+                class="section"
+                style="margin-top: 2rem;">
+
+                <div class="section-header section-heading">
+
+                    <div class="section-icon danger">
+                        📋
+                    </div>
+
+                    <div>
+                        <h2 class="section-title">
+                            Histórico de Serviços
+                        </h2>
+
+                        <p class="section-subtitle">
+                            Todos os serviços
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="table-container">
+
+                    <table class="table">
+
+                        <thead>
+                            <tr>
+                                <th scope="col">Cliente</th>
+                                <th scope="col">Aparelho</th>
+                                <th scope="col">Problema</th>
+                                <th scope="col">Orçamento</th>
+                                <th scope="col">Sinal</th>
+                                <th scope="col">Restante</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="servicesTableBody">
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+                <div
+                    id="noHistoryMessage"
+                    class="text-center text-muted"
+                    style="padding: 2rem;">
+
+                    <p>Nenhum serviço no histórico.</p>
+
+                </div>
+
+            </section>
+
+        </main>
+
     </div>
 
-    <div class="modal-overlay" id="serviceModal">
+    <!-- =====================================================
+         MODAL DE SERVIÇO
+    ===================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="serviceModal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalTitle"
+        aria-hidden="true">
+
         <div class="modal">
+
             <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Detalhes do Serviço</h3>
-                <button class="modal-close" onclick="closeModal('serviceModal')">×</button>
+
+                <h3
+                    class="modal-title"
+                    id="modalTitle">
+
+                    Detalhes do Serviço
+
+                </h3>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="closeModal('serviceModal')"
+                    aria-label="Fechar janela">
+
+                    ×
+
+                </button>
+
             </div>
-            <div class="modal-body" id="modalBody"></div>
-            <div class="modal-footer" id="modalFooter"></div>
+
+            <div
+                class="modal-body"
+                id="modalBody">
+
+            </div>
+
+            <div
+                class="modal-footer"
+                id="modalFooter">
+
+            </div>
+
         </div>
+
     </div>
-    <div class="completed-notification" id="completedNotification" style="display:none;"></div>
-    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- NOTIFICAÇÃO DE SERVIÇO CONCLUÍDO -->
+
+    <div
+        class="completed-notification"
+        id="completedNotification"
+        style="display: none;"
+        role="status"
+        aria-live="polite">
+
+    </div>
+
+    <!-- NOTIFICAÇÕES -->
+
+    <div
+        class="toast-container"
+        id="toastContainer"
+        aria-live="polite"
+        aria-atomic="true">
+
+    </div>
+
+    <!-- =====================================================
+         SCRIPTS
+    ===================================================== -->
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
     <script src="auth.js"></script>
+
     <script src="script.js"></script>
+
 </body>
+
 </html>
