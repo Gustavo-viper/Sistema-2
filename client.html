@@ -1,0 +1,644 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#05070d">
+    <meta name="description" content="Painel do cliente da Gustavo & Emily Assistência Técnica">
+
+    <title>Painel do Cliente | Gustavo & Emily</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        /* =====================================================
+           PAINEL DO CLIENTE
+        ===================================================== */
+
+        .profile-header {
+            background: linear-gradient(135deg, #2563eb, #60a5fa);
+            border-radius: 16px;
+            padding: 2rem;
+            color: #fff;
+            margin-bottom: 2rem;
+        }
+
+        .profile-header h1 {
+            font-size: 1.5rem;
+            margin: 0 0 .5rem;
+            overflow-wrap: anywhere;
+        }
+
+        .profile-header p {
+            opacity: .9;
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, .2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 0 auto 1rem;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, .1);
+            border: 2px solid transparent;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, .1);
+        }
+
+        .action-card.primary {
+            border-color: #2563eb;
+        }
+
+        .action-card.success {
+            border-color: #10b981;
+        }
+
+        .action-card.warning {
+            border-color: #f59e0b;
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: .75rem;
+        }
+
+        .action-card h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin: 0 0 .5rem;
+        }
+
+        .action-card p {
+            color: #6b7280;
+            font-size: .875rem;
+            margin: 0 0 1rem;
+        }
+
+        .services-list-client {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .service-item-client {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .05);
+            border-left: 4px solid #2563eb;
+        }
+
+        .service-item-client.pending {
+            border-left-color: #f59e0b;
+        }
+
+        .service-item-client.processing {
+            border-left-color: #2563eb;
+        }
+
+        .service-item-client.ready {
+            border-left-color: #10b981;
+        }
+
+        .service-item-client.completed {
+            border-left-color: #9ca3af;
+            opacity: .7;
+        }
+
+        .client-skeleton {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #6b7280;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 0 1.5rem;
+        }
+
+        .section-title.spaced {
+            margin-top: 2rem;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .table-container table {
+            min-width: 650px;
+        }
+
+        .logout-btn {
+            margin-left: auto;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* =====================================================
+           ACESSIBILIDADE E RESPONSIVIDADE
+        ===================================================== */
+
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible,
+        select:focus-visible,
+        textarea:focus-visible {
+            outline: 3px solid #60a5fa;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 600px) {
+            .profile-header {
+                padding: 1.5rem;
+            }
+
+            .actions-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .action-card {
+                padding: 1.25rem;
+            }
+
+            .profile-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .header {
+                gap: 1rem;
+                flex-wrap: wrap;
+            }
+
+            .logo-text h1 {
+                font-size: 1rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .action-card {
+                transition: none;
+            }
+
+            .action-card:hover {
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- =====================================================
+         CABEÇALHO
+    ===================================================== -->
+
+    <header class="header">
+
+        <a href="client.html"
+           class="logo"
+           aria-label="Ir para o painel do cliente">
+
+            <div class="logo-icon" aria-hidden="true">GE</div>
+
+            <div class="logo-text">
+                <h1>Assistência Técnica Gustavo & Emily</h1>
+                <span>Seu Painel do Cliente</span>
+            </div>
+
+        </a>
+
+        <button
+            type="button"
+            class="btn btn-secondary logout-btn"
+            id="logoutBtn"
+            onclick="logout()"
+            aria-label="Sair da conta">
+
+            Sair
+
+        </button>
+
+    </header>
+
+    <!-- =====================================================
+         CONTEÚDO PRINCIPAL
+    ===================================================== -->
+
+    <main class="container">
+
+        <!-- PERFIL DO CLIENTE -->
+
+        <section
+            class="profile-header"
+            id="profileHeader"
+            aria-labelledby="profileName">
+
+            <div style="text-align: center;">
+
+                <div
+                    class="profile-avatar"
+                    id="profileAvatar"
+                    aria-hidden="true">
+
+                    👤
+
+                </div>
+
+                <h1 id="profileName">Carregando...</h1>
+
+                <p id="profileEmail">Carregando e-mail...</p>
+
+            </div>
+
+        </section>
+
+        <!-- AÇÕES RÁPIDAS -->
+
+        <section aria-labelledby="quickActionsTitle">
+
+            <h2 id="quickActionsTitle" class="section-title">
+                Ações rápidas
+            </h2>
+
+            <div class="actions-grid" id="actionsGrid">
+
+                <article class="action-card primary">
+
+                    <div class="action-icon" aria-hidden="true">📱</div>
+
+                    <h3>Solicitar Orçamento</h3>
+
+                    <p>
+                        Envie uma solicitação para consertar seu aparelho.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-primary btn-block"
+                        id="requestBudgetBtn"
+                        onclick="requestBudget()">
+
+                        Solicitar Agora
+
+                    </button>
+
+                </article>
+
+                <article class="action-card success">
+
+                    <div class="action-icon" aria-hidden="true">📋</div>
+
+                    <h3>Meus Serviços</h3>
+
+                    <p>
+                        Acompanhe o andamento dos seus serviços.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-success btn-block"
+                        onclick="viewMyServices()">
+
+                        Ver Serviços
+
+                    </button>
+
+                </article>
+
+                <article class="action-card warning">
+
+                    <div class="action-icon" aria-hidden="true">📝</div>
+
+                    <h3>Histórico</h3>
+
+                    <p>
+                        Consulte todos os serviços realizados.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="btn btn-warning btn-block"
+                        onclick="viewHistory()">
+
+                        Ver Histórico
+
+                    </button>
+
+                </article>
+
+            </div>
+
+        </section>
+
+        <!-- SERVIÇOS EM ANDAMENTO -->
+
+        <section aria-labelledby="ongoingServicesTitle">
+
+            <h2 id="ongoingServicesTitle" class="section-title">
+                Meus Serviços em Andamento
+            </h2>
+
+            <div
+                id="myServicesList"
+                class="services-list-client"
+                aria-live="polite">
+
+            </div>
+
+            <div id="noServicesClient" class="client-skeleton">
+
+                <div class="empty-icon" aria-hidden="true">📱</div>
+
+                <p>Você ainda não tem serviços em andamento.</p>
+
+            </div>
+
+        </section>
+
+        <!-- HISTÓRICO COMPLETO -->
+
+        <section aria-labelledby="historyTitle">
+
+            <h2 id="historyTitle" class="section-title spaced">
+                Histórico Completo
+            </h2>
+
+            <div class="table-container">
+
+                <table class="table">
+
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Aparelho</th>
+                            <th scope="col">Problema</th>
+                            <th scope="col">Total</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Ações</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="clientHistoryBody"></tbody>
+
+                </table>
+
+            </div>
+
+            <div id="noHistoryClient" class="client-skeleton">
+
+                <p>Nenhum serviço no histórico.</p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- =====================================================
+         NOTIFICAÇÕES
+    ===================================================== -->
+
+    <div
+        class="toast-container"
+        id="toastContainer"
+        aria-live="polite"
+        aria-atomic="true">
+
+    </div>
+
+    <!-- =====================================================
+         MODAL DE SOLICITAÇÃO DE ORÇAMENTO
+    ===================================================== -->
+
+    <div
+        id="budgetRequestModal"
+        class="modal-overlay"
+        aria-hidden="true">
+
+        <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="budgetRequestTitle">
+
+            <div class="modal-header">
+
+                <h2 id="budgetRequestTitle" class="modal-title">
+                    Solicitar Orçamento
+                </h2>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="closeModal('budgetRequestModal')"
+                    aria-label="Fechar solicitação de orçamento">
+
+                    ×
+
+                </button>
+
+            </div>
+
+            <form id="budgetRequestForm" novalidate>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="requestDeviceType">
+                        Tipo de aparelho <span class="required">*</span>
+                    </label>
+
+                    <select
+                        id="requestDeviceType"
+                        class="form-select"
+                        name="device_type"
+                        required>
+
+                        <option value="">Selecione o aparelho</option>
+                        <option value="Celular">Celular</option>
+                        <option value="iPhone">iPhone</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Notebook">Notebook</option>
+                        <option value="Computador">Computador</option>
+                        <option value="Videogame">Videogame</option>
+                        <option value="Outro">Outro</option>
+
+                    </select>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="requestDeviceModel">
+                        Marca e modelo
+                    </label>
+
+                    <input
+                        type="text"
+                        id="requestDeviceModel"
+                        name="device_model"
+                        class="form-input"
+                        placeholder="Ex.: iPhone 13, Samsung A54"
+                        maxlength="150"
+                        autocomplete="off">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="requestProblemType">
+                        Qual é o problema? <span class="required">*</span>
+                    </label>
+
+                    <input
+                        type="text"
+                        id="requestProblemType"
+                        name="problem_type"
+                        class="form-input"
+                        placeholder="Ex.: Tela quebrada, não liga..."
+                        maxlength="300"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label class="form-label" for="requestObservations">
+                        Descreva melhor o problema
+                    </label>
+
+                    <textarea
+                        id="requestObservations"
+                        name="observations"
+                        class="form-textarea"
+                        placeholder="Informe detalhes do defeito ou outras observações..."
+                        rows="4"
+                        maxlength="2000"></textarea>
+
+                </div>
+
+                <div
+                    id="budgetRequestError"
+                    class="form-error hidden"
+                    role="alert"
+                    aria-live="assertive">
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button
+                        type="button"
+                        class="btn btn-secondary"
+                        onclick="closeModal('budgetRequestModal')">
+
+                        Cancelar
+
+                    </button>
+
+                    <button
+                        type="submit"
+                        id="submitBudgetRequestBtn"
+                        class="btn btn-primary">
+
+                        Enviar Solicitação
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         MODAL DE DETALHES DO SERVIÇO
+    ===================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="serviceModal"
+        aria-hidden="true">
+
+        <div
+            class="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modalTitle">
+
+            <div class="modal-header">
+
+                <h3 id="modalTitle" class="modal-title">
+                    Detalhes do Serviço
+                </h3>
+
+                <button
+                    type="button"
+                    class="modal-close"
+                    onclick="closeModal('serviceModal')"
+                    aria-label="Fechar janela">
+
+                    ×
+
+                </button>
+
+            </div>
+
+            <div class="modal-body" id="modalBody"></div>
+
+            <div class="modal-footer" id="modalFooter"></div>
+
+        </div>
+
+    </div>
+
+    <!-- =====================================================
+         SCRIPTS
+    ===================================================== -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <script src="auth.js"></script>
+
+    <script src="client.js"></script>
+
+</body>
+
+</html>
