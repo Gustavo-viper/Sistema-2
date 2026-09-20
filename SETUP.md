@@ -142,3 +142,20 @@ create trigger create_profile_for_new_user
 - Para produção, configure RLS (Row Level Security) corretamente
 - Para pagamentos reais, implemente as APIs dos gateways de pagamento
 - Para notificações automáticas, use Supabase Edge Functions ou integração com APIs externas
+
+## Etapa 2 — Notificações
+Execute `ETAPA-2-NOTIFICACOES.sql` no Supabase depois da Etapa 1. Ele cria as notificações e os gatilhos para atualizações de orçamentos e serviços.
+
+## Pacote completo das 5 etapas
+
+Para ativar todas as funcionalidades novas, execute no Supabase o arquivo **ETAPA-COMPLETA.sql**.
+
+O pacote inclui:
+
+1. Acompanhamento de solicitações de orçamento;
+2. Notificações internas;
+3. Chat entre cliente e administrador;
+4. Upload de fotos e documentos;
+5. Avaliação dos serviços concluídos.
+
+Antes de executar, faça um backup do banco. O SQL utiliza `IF NOT EXISTS` e recria somente as políticas específicas dessas funcionalidades.
