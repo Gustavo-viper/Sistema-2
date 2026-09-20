@@ -1,0 +1,121 @@
+/* Ajustes visuais finais: temas realmente visíveis em todas as páginas */
+:root {
+  --ge-primary: #087ee8;
+  --ge-primary-dark: #0564bd;
+  --ge-page: #eef6ff;
+  --ge-surface: #ffffff;
+  --ge-text: #0f172a;
+  --ge-border: #dbe5ef;
+}
+:root[data-theme="white"] {
+  --ge-primary: #64748b;
+  --ge-primary-dark: #475569;
+  --ge-page: #ffffff;
+  --ge-surface: #ffffff;
+  --ge-text: #1e293b;
+  --ge-border: #cbd5e1;
+}
+:root[data-theme="green"] {
+  --ge-primary: #16a34a;
+  --ge-primary-dark: #15803d;
+  --ge-page: #effdf4;
+  --ge-surface: #ffffff;
+  --ge-text: #14532d;
+  --ge-border: #bbf7d0;
+}
+html, body { background: var(--ge-page) !important; }
+body { color: var(--ge-text); }
+.header, .topbar, .navbar, .card, .panel, .feature-panel, .login-box,
+.modal, .service-card, .client-card, .stat-card, .form-card, .section-card {
+  border-color: var(--ge-border);
+}
+.btn-primary, .button-primary, button.btn-primary, a.btn-primary {
+  background: var(--ge-primary) !important;
+  border-color: var(--ge-primary) !important;
+}
+.btn-primary:hover, .button-primary:hover, button.btn-primary:hover, a.btn-primary:hover {
+  background: var(--ge-primary-dark) !important;
+}
+.theme-palette { z-index: 20; }
+.brand-logo-image { max-width: 320px; max-height: 220px; object-fit: contain; }
+.ge-header-logo { width: 64px; height: 64px; object-fit: contain; border-radius: 12px; flex: 0 0 auto; }
+.ge-boot-logo { width: 150px; max-width: 70vw; height: auto; object-fit: contain; display: block; margin: 0 auto 1rem; }
+.login-box { background: var(--ge-surface) !important; }
+.login-container, .login-logo h1, .login-logo p { color: var(--ge-text); }
+.login-box input, .login-box select, .login-box textarea { border-color: var(--ge-border) !important; }
+
+
+/* =====================================================
+   CORREÇÃO VISUAL DEFINITIVA — TEMAS E COMPONENTES
+===================================================== */
+:root {
+  --primary: var(--ge-primary);
+  --primary-dark: var(--ge-primary-dark);
+  --primary-light: color-mix(in srgb, var(--ge-primary) 55%, white);
+  --background: var(--ge-page);
+  --surface: var(--ge-surface);
+  --border: var(--ge-border);
+  --text: var(--ge-text);
+  --text-light: color-mix(in srgb, var(--ge-text) 65%, white);
+  --text-muted: color-mix(in srgb, var(--ge-text) 45%, white);
+  --theme-page: var(--ge-page);
+}
+
+html, body {
+  background: var(--ge-page) !important;
+  color: var(--ge-text) !important;
+}
+body::before { background: var(--ge-page) !important; }
+
+.container, main, .page, .app, .content, .main-content, .login-container { color: var(--ge-text); }
+.card, .panel, .feature-panel, .login-box, .modal, .service-item-client,
+.budget-request-card, .notifications-panel, .action-card, .stat-card,
+.client-card, .form-card, .section-card, .table-container {
+  background: var(--ge-surface) !important;
+  color: var(--ge-text) !important;
+  border-color: var(--ge-border) !important;
+}
+
+h1, h2, h3, h4, h5, h6, p, label, td, th, li, .section-title, .form-label,
+.logo-text, .login-logo h1, .login-logo p { color: var(--ge-text); }
+.muted, .text-muted, small { color: color-mix(in srgb, var(--ge-text) 62%, white) !important; }
+
+button, .btn, a.btn, input[type="submit"] {
+  border-color: var(--ge-border);
+}
+.btn-primary, .button-primary, button.btn-primary, a.btn-primary,
+.btn-success, button.btn-success {
+  background: var(--ge-primary) !important;
+  color: #fff !important;
+  border-color: var(--ge-primary) !important;
+}
+.btn-primary:hover, .button-primary:hover, .btn-success:hover { background: var(--ge-primary-dark) !important; }
+.btn-secondary { background: var(--ge-surface) !important; color: var(--ge-text) !important; border: 1px solid var(--ge-border) !important; }
+
+input, select, textarea, .form-input, .form-select, .form-textarea {
+  background: var(--ge-surface) !important;
+  color: var(--ge-text) !important;
+  border-color: var(--ge-border) !important;
+}
+input::placeholder, textarea::placeholder { color: color-mix(in srgb, var(--ge-text) 45%, white) !important; }
+
+.theme-palette { display:flex !important; align-items:center; justify-content:center; gap:.5rem; flex-wrap:wrap; margin:.75rem 0 !important; }
+.theme-label { color: var(--ge-text) !important; font-size:.78rem; font-weight:700; }
+.theme-dot { width:64px !important; height:34px !important; min-width:64px; border-radius:10px !important; border:2px solid var(--ge-border) !important; display:inline-flex !important; align-items:center; justify-content:center; padding:0 !important; position:relative; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.12); transition:transform .2s, outline .2s; }
+.theme-dot span { font-size:.72rem; font-weight:800; text-shadow:0 1px 2px rgba(0,0,0,.25); }
+.theme-dot-blue { background:#087ee8 !important; color:#fff !important; }
+.theme-dot-white { background:#fff !important; color:#172033 !important; }
+.theme-dot-green { background:#16a34a !important; color:#fff !important; }
+.theme-dot.active { outline:3px solid var(--ge-primary); outline-offset:2px; transform:translateY(-2px); }
+
+.profile-header { background:linear-gradient(135deg, var(--ge-primary), var(--ge-primary-dark)) !important; }
+.logo-icon, .brand-mark { background:var(--ge-primary) !important; }
+.status-badge, .badge-primary { background:var(--ge-primary) !important; color:#fff !important; }
+.notification-item.unread { background:color-mix(in srgb, var(--ge-primary) 12%, var(--ge-surface)) !important; border-left-color:var(--ge-primary) !important; }
+.budget-request-response { background:color-mix(in srgb, var(--ge-primary) 10%, var(--ge-surface)) !important; }
+
+.pix-animation { background:var(--ge-primary) !important; color:#fff !important; animation:pixPulseFinal 1.8s infinite; }
+.pix-warning { padding:.75rem; border-radius:10px; background:color-mix(in srgb, #f59e0b 16%, var(--ge-surface)); }
+@keyframes pixPulseFinal { 0%,100% { transform:scale(1); box-shadow:0 0 0 0 color-mix(in srgb, var(--ge-primary) 35%, transparent); } 50% { transform:scale(1.05); box-shadow:0 0 0 14px transparent; } }
+
+@media (prefers-reduced-motion: reduce) { .pix-animation { animation:none !important; } }
