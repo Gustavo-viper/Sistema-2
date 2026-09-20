@@ -43,15 +43,82 @@
             background: #1d4ed8;
         }
 
+        /* =====================================================
+           TELA DE CARREGAMENTO
+        ===================================================== */
+
+        #bootScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: #05070d;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .boot-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .boot-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 78px;
+            height: 78px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 800;
+            box-shadow: 0 10px 35px rgba(37, 99, 235, 0.3);
+        }
+
+        .boot-spinner {
+            width: 36px;
+            height: 36px;
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: bootSpin 0.8s linear infinite;
+        }
+
+        .boot-content p {
+            margin: 0;
+            color: #b8c0d0;
+            font-size: 14px;
+        }
+
+        @keyframes bootSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* =====================================================
+           TELA DE BLOQUEIO
+        ===================================================== */
+
         .lock-screen {
             position: fixed;
             inset: 0;
             z-index: 5000;
-            display: flex;
+            display: none;
             align-items: center;
             justify-content: center;
             padding: 1rem;
             background: linear-gradient(135deg, #f0f4ff, #e6edf7);
+        }
+
+        .lock-screen.visible {
+            display: flex !important;
         }
 
         .lock-box {
@@ -237,7 +304,9 @@
         }
 
         @media (prefers-reduced-motion: reduce) {
-            .auth-btn {
+            .auth-btn,
+            .boot-spinner {
+                animation: none;
                 transition: none;
             }
         }
@@ -245,6 +314,24 @@
 </head>
 
 <body>
+
+    <!-- =====================================================
+         TELA INICIAL DE CARREGAMENTO
+    ===================================================== -->
+
+    <div id="bootScreen" role="status" aria-live="polite">
+        <div class="boot-content">
+
+            <div class="boot-logo">
+                GE
+            </div>
+
+            <div class="boot-spinner" aria-hidden="true"></div>
+
+            <p id="bootMessage">Verificando acesso...</p>
+
+        </div>
+    </div>
 
     <!-- =====================================================
          TELA DE BLOQUEIO
@@ -255,7 +342,8 @@
         id="lockScreen"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="lockTitle">
+        aria-labelledby="lockTitle"
+        aria-hidden="true">
 
         <div class="lock-box">
 
@@ -959,7 +1047,106 @@
     </div>
 
     <!-- =====================================================
-         SCRIPTS
+         FUNÇÕES DE CONTROLE VISUAL
+    ===================================================== -->
+
+    <script>
+        (function () {
+            "use strict";
+
+            const bootScreen = document.getElementById("bootScreen");
+            const lockScreen = document.getElementById("lockScreen");
+            const adminApp = document.getElementById("adminApp");
+            const bootMessage = document.getElementById("bootMessage");
+
+            window.showAdminPanel = function () {
+                if (bootScreen) {
+                    bootScreen.style.display = "none";
+                }
+
+                if (lockScreen) {
+                    lockScreen.classList.remove("visible");
+                    lockScreen.setAttribute("aria-hidden", "true");
+                    lockScreen.style.display = "none";
+                }
+
+                if (adminApp) {
+                    adminApp.classList.remove("hidden");
+                    adminApp.style.display = "block";
+                }
+            };
+
+            window.showAccessDenied = function () {
+                if (bootScreen) {
+                    bootScreen.style.display = "none";
+                }
+
+                if (adminApp) {
+                    adminApp.classList.add("hidden");
+                    adminApp.style.display = "none";
+                }
+
+                if (lockScreen) {
+                    lockScreen.classList.add("visible");
+                    lockScreen.setAttribute("aria-hidden", "false");
+                    lockScreen.style.display = "flex";
+                }
+            };
+
+            window.hideBootScreen = function () {
+                if (bootScreen) {
+                    bootScreen.style.display = "none";
+                }
+            };
+
+            window.setBootMessage = function (message) {
+                if (bootMessage) {
+                    bootMessage.textContent = message;
+                }
+            };
+
+            /*
+             * Se o script administrativo alterar diretamente
+             * a visibilidade das telas, o carregamento é encerrado.
+             */
+            function checkScreenState() {
+                if (!bootScreen) return;
+
+                const adminVisible =
+                    adminApp &&
+                    !adminApp.classList.contains("hidden") &&
+                    getComputedStyle(adminApp).display !== "none";
+
+                const lockVisible =
+                    lockScreen &&
+                    (
+                        lockScreen.classList.contains("visible") ||
+                        getComputedStyle(lockScreen).display !== "none"
+                    );
+
+                if (adminVisible || lockVisible) {
+                    bootScreen.style.display = "none";
+                }
+            }
+
+            if (window.MutationObserver && adminApp && lockScreen) {
+                const observer = new MutationObserver(checkScreenState);
+
+                observer.observe(adminApp, {
+                    attributes: true,
+                    attributeFilter: ["class", "style"]
+                });
+
+                observer.observe(lockScreen, {
+                    attributes: true,
+                    attributeFilter: ["class", "style", "aria-hidden"]
+                });
+            }
+        })();
+    </script>
+
+    <!-- =====================================================
+         SCRIPTS PRINCIPAIS
     ===================================================== -->
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -968,19 +1155,33 @@
 
     <script src="script.js"></script>
 
-    <!-- Eventos básicos de interface -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
+    <!-- =====================================================
+         EVENTOS DA INTERFACE
+    ===================================================== -->
 
-            const logoutBtn = document.getElementById("logoutBtn");
-            const searchClientsBtn = document.getElementById("searchClientsBtn");
-            const addClientBtn = document.getElementById("addClientBtn");
-            const closeServiceModalBtn = document.getElementById("closeServiceModalBtn");
-            const filterStatus = document.getElementById("filterStatus");
-            const serviceSearch = document.getElementById("serviceSearch");
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const logoutBtn =
+                document.getElementById("logoutBtn");
+
+            const searchClientsBtn =
+                document.getElementById("searchClientsBtn");
+
+            const addClientBtn =
+                document.getElementById("addClientBtn");
+
+            const closeServiceModalBtn =
+                document.getElementById("closeServiceModalBtn");
+
+            const filterStatus =
+                document.getElementById("filterStatus");
+
+            const serviceSearch =
+                document.getElementById("serviceSearch");
 
             if (logoutBtn) {
-                logoutBtn.addEventListener("click", () => {
+                logoutBtn.addEventListener("click", function () {
                     if (typeof window.logout === "function") {
                         window.logout();
                     }
@@ -988,7 +1189,7 @@
             }
 
             if (searchClientsBtn) {
-                searchClientsBtn.addEventListener("click", () => {
+                searchClientsBtn.addEventListener("click", function () {
                     if (typeof window.searchClients === "function") {
                         window.searchClients();
                     }
@@ -996,7 +1197,7 @@
             }
 
             if (addClientBtn) {
-                addClientBtn.addEventListener("click", () => {
+                addClientBtn.addEventListener("click", function () {
                     if (typeof window.showAddClientForm === "function") {
                         window.showAddClientForm();
                     }
@@ -1004,7 +1205,7 @@
             }
 
             if (closeServiceModalBtn) {
-                closeServiceModalBtn.addEventListener("click", () => {
+                closeServiceModalBtn.addEventListener("click", function () {
                     if (typeof window.closeModal === "function") {
                         window.closeModal("serviceModal");
                     }
@@ -1012,7 +1213,7 @@
             }
 
             if (filterStatus) {
-                filterStatus.addEventListener("change", () => {
+                filterStatus.addEventListener("change", function () {
                     if (typeof window.filterServices === "function") {
                         window.filterServices();
                     }
@@ -1020,7 +1221,7 @@
             }
 
             if (serviceSearch) {
-                serviceSearch.addEventListener("input", () => {
+                serviceSearch.addEventListener("input", function () {
                     if (typeof window.filterServices === "function") {
                         window.filterServices();
                     }
