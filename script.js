@@ -1,6 +1,8 @@
+
 /* =========================================================
    GUSTAVO & EMILY — ASSISTÊNCIA TÉCNICA
    SCRIPT.JS — PAINEL ADMINISTRATIVO
+   VERSÃO CORRIGIDA
 ========================================================= */
 
 "use strict";
@@ -63,15 +65,15 @@ const PROBLEM_VALUES = {
 };
 
 /* =========================================================
-   HELPERS GERAIS
+   HELPERS
 ========================================================= */
 
 function getSupabase() {
   const client = window.supabaseClient;
 
   if (!client) {
-    console.error("Cliente Supabase não inicializado.");
-    showToast("Conexão com o banco de dados não inicializada.", "error");
+    console.error("Supabase ainda não foi inicializado.");
+    showToast("Conexão com o banco não inicializada.", "error");
     return null;
   }
 
@@ -105,9 +107,7 @@ function escapeHTML(value) {
 }
 
 function formatMoney(value) {
-  const number = Number(value) || 0;
-
-  return number.toLocaleString("pt-BR", {
+  return (Number(value) || 0).toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL"
   });
@@ -118,11 +118,9 @@ function formatDate(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return date.toLocaleDateString("pt-BR");
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("pt-BR");
 }
 
 function formatDateTime(value) {
@@ -130,11 +128,9 @@ function formatDateTime(value) {
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-
-  return date.toLocaleString("pt-BR");
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleString("pt-BR");
 }
 
 function getInitials(name) {
@@ -149,8 +145,8 @@ function getInitials(name) {
   }
 
   return (
-    parts[0].charAt(0) +
-    parts[parts.length - 1].charAt(0)
+    parts[0][0] +
+    parts[parts.length - 1][0]
   ).toUpperCase();
 }
 
@@ -171,11 +167,22 @@ function createStatusBadge(status) {
   `;
 }
 
-function showToast(message, type = "info") {
-  const container =
-    getElement("toastContainer") ||
-    createToastContainer();
+function createToastContainer() {
+  let container = getElement("toastContainer");
 
+  if (container) return container;
+
+  container = document.createElement("div");
+  container.id = "toastContainer";
+  container.className = "toast-container";
+
+  document.body.appendChild(container);
+
+  return container;
+}
+
+function showToast(message, type = "info") {
+  const container = createToastContainer();
   const toast = document.createElement("div");
 
   toast.className = `toast toast-${type}`;
@@ -183,24 +190,13 @@ function showToast(message, type = "info") {
 
   container.appendChild(toast);
 
-  setTimeout(() => {
+  requestAnimationFrame(() => {
     toast.classList.add("show");
-  }, 10);
+  });
 
   setTimeout(() => {
     toast.remove();
   }, 4500);
-}
-
-function createToastContainer() {
-  const container = document.createElement("div");
-
-  container.id = "toastContainer";
-  container.className = "toast-container";
-
-  document.body.appendChild(container);
-
-  return container;
 }
 
 function showAlert(message, type = "info") {
@@ -218,27 +214,25 @@ function showAlert(message, type = "info") {
   `;
 }
 
-function closeModal(modalId) {
-  const modal = getElement(modalId);
-
-  if (modal) {
-    modal.classList.remove("active");
-    modal.classList.remove("show");
-    modal.style.display = "none";
-  }
-}
-
 function openModal(modalId) {
   const modal = getElement(modalId);
 
-  if (modal) {
-    modal.style.display = "flex";
-    modal.classList.add("active");
-    modal.classList.add("show");
-  }
+  if (!modal) return;
+
+  modal.style.display = "flex";
+  modal.classList.add("active", "show");
 }
 
-/* Compatibilidade com o código antigo */
+function closeModal(modalId) {
+  const modal = getElement(modalId);
+
+  if (!modal) return;
+
+  modal.classList.remove("active", "show");
+  modal.style.display = "none";
+}
+
+/* Compatibilidade com códigos antigos */
 window.toast = showToast;
 window.alertBox = showAlert;
 window.money = formatMoney;
@@ -258,9 +252,7 @@ async function loadClientsFromDB() {
   const { data, error } = await supabase
     .from("clients")
     .select("*")
-    .order("created_at", {
-      ascending: false
-    });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Erro ao carregar clientes:", error);
@@ -279,9 +271,7 @@ async function loadServicesFromDB() {
   const { data, error } = await supabase
     .from("services")
     .select("*")
-    .order("created_at", {
-      ascending: false
-    });
+    .order("created_at", { ascending: false });
 
   if (error) {
     console.error("Erro ao carregar serviços:", error);
@@ -308,7 +298,7 @@ async function refreshAll() {
 
     renderAll();
   } catch (error) {
-    console.error("Erro ao atualizar painel:", error);
+    console.error("Erro ao atualizar o painel:", error);
     showToast("Erro ao atualizar os dados.", "error");
   } finally {
     isLoading = false;
@@ -332,21 +322,23 @@ function updateDate() {
     getElement("currentDate") ||
     getElement("todayDate");
 
-  if (element) {
-    element.textContent = new Date().toLocaleDateString(
-      "pt-BR",
-      {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      }
-    );
-  }
+  if (!element) return;
+
+  element.textContent = new Date().toLocaleDateString(
+    "pt-BR",
+    {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    }
+  );
 }
 
 function updateStats() {
   const totalClients = clientsCache.length;
+
+  const totalServices = servicesCache.length;
 
   const completedServices = servicesCache.filter(
     service => service.status === "completed"
@@ -365,47 +357,11 @@ function updateStats() {
       client.is_vip === true
   ).length;
 
-  const stats = {
-    totalClients,
-    completedServices,
-    waitingServices,
-    vipClients
-  };
-
   setText("totalClients", totalClients);
-  setText("totalServices", servicesCache.length);
+  setText("totalServices", totalServices);
   setText("completedServices", completedServices);
   setText("waitingServices", waitingServices);
   setText("vipClients", vipClients);
-
-  const statsGrid = getElement("statsGrid");
-
-  if (
-    statsGrid &&
-    statsGrid.children.length === 0
-  ) {
-    statsGrid.innerHTML = `
-      <div class="stat-card">
-        <span>Total de clientes</span>
-        <strong>${stats.totalClients}</strong>
-      </div>
-
-      <div class="stat-card">
-        <span>Serviços concluídos</span>
-        <strong>${stats.completedServices}</strong>
-      </div>
-
-      <div class="stat-card">
-        <span>Aguardando retirada</span>
-        <strong>${stats.waitingServices}</strong>
-      </div>
-
-      <div class="stat-card">
-        <span>Clientes VIP</span>
-        <strong>${stats.vipClients}</strong>
-      </div>
-    `;
-  }
 }
 
 /* =========================================================
@@ -432,9 +388,8 @@ function loadRecentClients() {
     emptyMessage.style.display = "none";
   }
 
-  const recentClients = clientsCache.slice(0, 8);
-
-  container.innerHTML = recentClients
+  container.innerHTML = clientsCache
+    .slice(0, 8)
     .map(client => {
       const name = client.name || "Cliente sem nome";
       const phone = client.phone || "Telefone não informado";
@@ -499,17 +454,12 @@ function showAddClientForm() {
       />
 
       <label>
-        <input
-          id="newClientVip"
-          type="checkbox"
-        />
+        <input id="newClientVip" type="checkbox" />
         Cliente VIP
       </label>
 
       <div class="form-actions">
-        <button type="submit">
-          Salvar cliente
-        </button>
+        <button type="submit">Salvar cliente</button>
 
         <button
           type="button"
@@ -539,9 +489,7 @@ function cancelAddClient() {
 }
 
 async function addNewClient(event) {
-  if (event) {
-    event.preventDefault();
-  }
+  event?.preventDefault();
 
   const supabase = getSupabase();
 
@@ -574,7 +522,7 @@ async function addNewClient(event) {
     console.error("Erro ao cadastrar cliente:", error);
 
     if (error.code === "23505") {
-      showToast("Este cliente já está cadastrado.", "warning");
+      showToast("Este telefone já está cadastrado.", "warning");
     } else {
       showToast("Erro ao cadastrar cliente.", "error");
     }
@@ -632,6 +580,7 @@ function searchClients() {
           Nenhum cliente encontrado.
         </div>
       `;
+
       return;
     }
 
@@ -641,13 +590,29 @@ function searchClients() {
         <button
           type="button"
           class="search-result"
-          onclick="selectClient('${escapeHTML(client.id)}')"
+          data-client-id="${escapeHTML(client.id)}"
         >
-          <strong>${escapeHTML(client.name || "Sem nome")}</strong>
-          <span>${escapeHTML(client.phone || client.email || "Sem contato")}</span>
+          <strong>
+            ${escapeHTML(client.name || "Sem nome")}
+          </strong>
+
+          <span>
+            ${escapeHTML(
+              client.phone ||
+              client.email ||
+              "Sem contato"
+            )}
+          </span>
         </button>
       `)
       .join("");
+
+    results.querySelectorAll("[data-client-id]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          selectClient(button.dataset.clientId);
+        });
+      });
   }, 250);
 }
 
@@ -665,6 +630,7 @@ function selectClient(clientId) {
 
   const input = getElement("clientSearch");
   const results = getElement("searchResults");
+  const selectedContainer = getElement("selectedClient");
 
   if (input) {
     input.value = client.name || "";
@@ -675,13 +641,18 @@ function selectClient(clientId) {
     results.innerHTML = "";
   }
 
-  const selectedContainer = getElement("selectedClient");
-
   if (selectedContainer) {
     selectedContainer.innerHTML = `
       <div class="selected-client-card">
-        <strong>${escapeHTML(client.name || "Cliente")}</strong>
-        <span>${escapeHTML(client.phone || "Telefone não informado")}</span>
+        <strong>
+          ${escapeHTML(client.name || "Cliente")}
+        </strong>
+
+        <span>
+          ${escapeHTML(
+            client.phone || "Telefone não informado"
+          )}
+        </span>
 
         <button
           type="button"
@@ -731,26 +702,31 @@ function generateRandomValue(problemType) {
   return Math.round(value / 10) * 10;
 }
 
+/*
+  ATENÇÃO:
+  Este é apenas um endereço de exemplo.
+  Substitua por um link real de pagamento.
+*/
 function generatePaymentLink(serviceId, amount, type) {
   const value = Number(amount) || 0;
 
-  const encodedId = encodeURIComponent(serviceId || "");
-  const encodedValue = encodeURIComponent(value.toFixed(2));
-  const encodedType = encodeURIComponent(type || "payment");
-
-  return `https://pagamento.exemplo.com/${encodedId}?valor=${encodedValue}&tipo=${encodedType}`;
+  return (
+    `https://pagamento.exemplo.com/` +
+    `${encodeURIComponent(serviceId || "")}` +
+    `?valor=${encodeURIComponent(value.toFixed(2))}` +
+    `&tipo=${encodeURIComponent(type || "payment")}`
+  );
 }
 
 async function submitBudget(event) {
-  if (event) {
-    event.preventDefault();
-  }
+  event?.preventDefault();
 
   const supabase = getSupabase();
 
   if (!supabase) return;
 
   const clientInput = getElement("clientSearch");
+
   const clientId =
     clientInput?.dataset?.clientId ||
     selectedClient?.id;
@@ -770,12 +746,15 @@ async function submitBudget(event) {
       "Preencha o tipo de aparelho e o problema.",
       "warning"
     );
+
     return;
   }
 
   const totalValue = generateRandomValue(problemType);
-  const signalValue = totalValue / 2;
-  const remainingValue = totalValue - signalValue;
+  const signalValue = Number((totalValue / 2).toFixed(2));
+  const remainingValue = Number(
+    (totalValue - signalValue).toFixed(2)
+  );
 
   const temporaryId =
     `temp-${Date.now()}-${Math.random()
@@ -822,10 +801,7 @@ async function submitBudget(event) {
 
     if (error) {
       console.error("Erro ao criar serviço:", error);
-      showToast(
-        "Erro ao registrar o orçamento.",
-        "error"
-      );
+      showToast("Erro ao registrar o orçamento.", "error");
       return;
     }
 
@@ -833,11 +809,7 @@ async function submitBudget(event) {
       servicesCache.unshift(data);
     }
 
-    const form = getElement("budgetForm");
-
-    if (form) {
-      form.reset();
-    }
+    getElement("budgetForm")?.reset();
 
     clearSelectedClient();
     renderAll();
@@ -858,7 +830,7 @@ async function submitBudget(event) {
 }
 
 /* =========================================================
-   LISTAGEM DE SERVIÇOS
+   SERVIÇOS
 ========================================================= */
 
 function getServiceClientName(service) {
@@ -941,11 +913,16 @@ function createServiceCard(service) {
   const status = service.status || "pending";
 
   return `
-    <div class="service-card" data-service-id="${escapeHTML(service.id)}">
+    <div
+      class="service-card"
+      data-service-id="${escapeHTML(service.id)}"
+    >
       <div class="service-card-header">
         <div>
           <h3>${escapeHTML(clientName)}</h3>
-          <span>${escapeHTML(service.device_type || "Aparelho")}</span>
+          <span>
+            ${escapeHTML(service.device_type || "Aparelho")}
+          </span>
         </div>
 
         ${createStatusBadge(status)}
@@ -1068,7 +1045,9 @@ function loadHistoryTable() {
         <td>${escapeHTML(service.device_model || "—")}</td>
         <td>${formatMoney(service.total_value)}</td>
         <td>${createStatusBadge(service.status)}</td>
-        <td>${formatDate(service.completed_at || service.created_at)}</td>
+        <td>
+          ${formatDate(service.completed_at || service.created_at)}
+        </td>
         <td>
           <button
             type="button"
@@ -1083,7 +1062,7 @@ function loadHistoryTable() {
 }
 
 /* =========================================================
-   DETALHES DO SERVIÇO
+   DETALHES
 ========================================================= */
 
 function showServiceDetails(serviceId) {
@@ -1175,7 +1154,7 @@ function showServiceDetails(serviceId) {
 }
 
 /* =========================================================
-   ATUALIZAÇÃO DE STATUS
+   STATUS DOS SERVIÇOS
 ========================================================= */
 
 async function updateServiceStatus(serviceId, changes) {
@@ -1210,11 +1189,9 @@ async function updateServiceStatus(serviceId, changes) {
 }
 
 async function approveService(serviceId) {
-  const confirmed = window.confirm(
-    "Deseja confirmar o pagamento do sinal?"
-  );
-
-  if (!confirmed) return;
+  if (!window.confirm("Deseja confirmar o pagamento do sinal?")) {
+    return;
+  }
 
   const success = await updateServiceStatus(serviceId, {
     status: "processing",
@@ -1236,10 +1213,7 @@ async function markReady(serviceId) {
   });
 
   if (success) {
-    showToast(
-      "Serviço marcado como pronto.",
-      "success"
-    );
+    showToast("Serviço marcado como pronto.", "success");
 
     showAlert(
       "O serviço foi marcado como pronto para retirada.",
@@ -1249,32 +1223,27 @@ async function markReady(serviceId) {
 }
 
 async function markComplete(serviceId) {
-  const confirmed = window.confirm(
-    "Deseja finalizar este serviço?"
-  );
+  if (!window.confirm("Deseja finalizar este serviço?")) {
+    return;
+  }
 
-  if (!confirmed) return;
+  const now = new Date().toISOString();
 
   const success = await updateServiceStatus(serviceId, {
     status: "completed",
-    remaining_paid_at: new Date().toISOString(),
-    completed_at: new Date().toISOString()
+    remaining_paid_at: now,
+    completed_at: now
   });
 
   if (success) {
-    showToast(
-      "Serviço finalizado com sucesso.",
-      "success"
-    );
+    showToast("Serviço finalizado com sucesso.", "success");
   }
 }
 
 async function deleteService(serviceId) {
-  const confirmed = window.confirm(
-    "Tem certeza que deseja excluir este serviço?"
-  );
-
-  if (!confirmed) return;
+  if (!window.confirm("Tem certeza que deseja excluir este serviço?")) {
+    return;
+  }
 
   const supabase = getSupabase();
 
@@ -1301,153 +1270,94 @@ async function deleteService(serviceId) {
 }
 
 /* =========================================================
-   INICIALIZAÇÃO DO PAINEL ADMINISTRATIVO
+   INICIALIZAÇÃO
 ========================================================= */
 
+/*
+  O auth.js é responsável por:
+  - Verificar a sessão.
+  - Verificar se o usuário é administrador.
+  - Mostrar ou ocultar lockScreen e adminApp.
+
+  Este arquivo apenas carrega os dados quando o painel
+  estiver liberado.
+*/
+
 async function initializeAdminPanel() {
-  const supabase = getSupabase();
-
-  if (!supabase) return;
-
-  const lockScreen = getElement("lockScreen");
   const adminApp = getElement("adminApp");
 
-  if (lockScreen) {
-    lockScreen.style.display = "flex";
-  }
+  if (!adminApp) return;
 
-  if (adminApp) {
-    adminApp.style.display = "none";
-  }
+  const isHidden =
+    adminApp.classList.contains("hidden") ||
+    adminApp.style.display === "none";
 
-  const {
-    data: { session },
-    error: sessionError
-  } = await supabase.auth.getSession();
-
-  if (sessionError || !session) {
-    window.location.href = "login.html?next=index.html";
+  if (isHidden) {
     return;
-  }
-
-  let isAdmin = false;
-
-  try {
-    const { data: rpcResult } = await supabase.rpc(
-      "current_user_is_admin"
-    );
-
-    isAdmin = rpcResult === true;
-  } catch (error) {
-    console.warn(
-      "RPC de administrador indisponível:",
-      error
-    );
-  }
-
-  if (!isAdmin) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, tipo, is_admin")
-      .eq("id", session.user.id)
-      .maybeSingle();
-
-    isAdmin = Boolean(
-      profile?.is_admin === true ||
-      profile?.role === "admin" ||
-      profile?.tipo === "admin"
-    );
-  }
-
-  if (!isAdmin) {
-    if (lockScreen) {
-      lockScreen.innerHTML = `
-        <div class="access-denied">
-          <h2>Acesso negado</h2>
-          <p>Você não possui permissão para acessar este painel.</p>
-          <button onclick="logoutAdmin()">
-            Sair
-          </button>
-        </div>
-      `;
-    }
-
-    return;
-  }
-
-  if (lockScreen) {
-    lockScreen.style.display = "none";
-  }
-
-  if (adminApp) {
-    adminApp.style.display = "block";
   }
 
   await refreshAll();
-}
-
-async function logoutAdmin() {
-  const supabase = getSupabase();
-
-  if (supabase) {
-    await supabase.auth.signOut();
-  }
-
-  window.location.href = "login.html";
 }
 
 /* =========================================================
    EVENTOS
 ========================================================= */
 
-document.addEventListener("DOMContentLoaded", () => {
+function initializeAdminEvents() {
   const budgetForm = getElement("budgetForm");
 
-  if (budgetForm) {
-    budgetForm.addEventListener(
-      "submit",
-      submitBudget
-    );
+  if (budgetForm && !budgetForm.dataset.eventsReady) {
+    budgetForm.addEventListener("submit", submitBudget);
+    budgetForm.dataset.eventsReady = "true";
   }
 
   const clientSearch = getElement("clientSearch");
 
-  if (clientSearch) {
-    clientSearch.addEventListener(
-      "input",
-      searchClients
-    );
+  if (clientSearch && !clientSearch.dataset.eventsReady) {
+    clientSearch.addEventListener("input", searchClients);
+    clientSearch.dataset.eventsReady = "true";
   }
 
   const serviceSearch = getElement("serviceSearch");
 
-  if (serviceSearch) {
-    serviceSearch.addEventListener(
-      "input",
-      filterServices
-    );
+  if (serviceSearch && !serviceSearch.dataset.eventsReady) {
+    serviceSearch.addEventListener("input", filterServices);
+    serviceSearch.dataset.eventsReady = "true";
   }
 
   const filterStatus = getElement("filterStatus");
 
-  if (filterStatus) {
-    filterStatus.addEventListener(
-      "change",
-      filterServices
-    );
+  if (filterStatus && !filterStatus.dataset.eventsReady) {
+    filterStatus.addEventListener("change", filterServices);
+    filterStatus.dataset.eventsReady = "true";
   }
 
   const serviceModal = getElement("serviceModal");
 
-  if (serviceModal) {
+  if (serviceModal && !serviceModal.dataset.eventsReady) {
     serviceModal.addEventListener("click", event => {
       if (event.target === serviceModal) {
         closeModal("serviceModal");
       }
     });
-  }
 
-  initializeAdminPanel();
+    serviceModal.dataset.eventsReady = "true";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initializeAdminEvents();
+
+  /*
+    Pequeno atraso para permitir que o auth.js:
+    1. Inicialize o Supabase.
+    2. Verifique a sessão.
+    3. Libere o painel administrativo.
+  */
+
+  setTimeout(() => {
+    initializeAdminPanel();
+  }, 300);
 });
 
 /* =========================================================
@@ -1477,5 +1387,14 @@ window.markReady = markReady;
 window.markComplete = markComplete;
 window.deleteService = deleteService;
 
-window.logoutAdmin = logoutAdmin;
+window.logoutAdmin = async function () {
+  const supabase = getSupabase();
+
+  if (supabase) {
+    await supabase.auth.signOut();
+  }
+
+  window.location.href = "login.html";
+};
+
 window.initializeAdminPanel = initializeAdminPanel;
