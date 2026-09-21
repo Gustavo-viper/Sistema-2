@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#05070d">
+    <meta name="description"
+        content="Login da Assistência Técnica Gustavo & Emily">
+
+    <title>Login | Gustavo & Emily Assistência Técnica</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="theme-fix.css?v=final20260920">
+    <script src="theme.js?v=final20260920"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: #05070d;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 430px;
+            margin: 2rem auto;
+        }
+
+        .login-box {
+            width: 100%;
+            padding: 2rem;
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .login-logo {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .login-logo .logo-icon {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            border-radius: 50%;
+            background: #111827;
+            color: #22c55e;
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .login-logo h1 {
+            margin: 0;
+            color: #111827;
+            font-size: 1.35rem;
+            line-height: 1.4;
+        }
+
+        .login-logo p {
+            margin: 0.5rem 0 0;
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1.5rem;
+            padding: 0.25rem;
+            background: #f3f4f6;
+            border-radius: 10px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 0.75rem 0.5rem;
+            border: 0;
+            border-radius: 8px;
+            background: transparent;
+            color: #6b7280;
+            cursor: pointer;
+            font: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .auth-tab:hover {
+            color: #111827;
+        }
+
+        .auth-tab:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.3);
+            outline-offset: 2px;
+        }
+
+        .auth-tab.active {
+            background: #fff;
+            color: #111827;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: #374151;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .form-input {
+            width: 100%;
+            min-height: 46px;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #fff;
+            color: #111827;
+            font: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        .form-input:invalid:not(:placeholder-shown) {
+            border-color: #dc2626;
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        .forgot-password {
+            display: block;
+            margin-top: 0.9rem;
+            color: #6b7280;
+            font-size: 0.85rem;
+            text-align: center;
+            text-decoration: none;
+        }
+
+        .forgot-password:hover {
+            color: #2563eb;
+            text-decoration: underline;
+        }
+
+        .forgot-password:focus-visible,
+        .switch-auth a:focus-visible,
+        .back-home:focus-visible {
+            outline: 3px solid rgba(37, 99, 235, 0.3);
+            outline-offset: 3px;
+            border-radius: 4px;
+        }
+
+        .switch-auth {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e5e7eb;
+            color: #6b7280;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+
+        .switch-auth a,
+        .back-home {
+            color: #2563eb;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .switch-auth a:hover,
+        .back-home:hover {
+            text-decoration: underline;
+        }
+
+        .back-home-container {
+            margin-top: 1.2rem;
+            text-align: center;
+        }
+
+        .back-home {
+            color: #6b7280;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .password-help {
+            display: block;
+            margin-top: 0.35rem;
+            color: #6b7280;
+            font-size: 0.75rem;
+            line-height: 1.4;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-box {
+                padding: 1.4rem;
+            }
+
+            .login-logo h1 {
+                font-size: 1.15rem;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .auth-form.active {
+                animation: none;
+            }
+
+            .auth-tab,
+            .form-input {
+                transition: none;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="pro-features.css?v=20260920-final">
+    <link rel="stylesheet" href="ui-overhaul.css?v=20260920-ui">
+    <link rel="stylesheet" href="viper-inspired-motion.css?v=20260920-motion">
+</head>
+
+<body>
+
+    <main class="login-container">
+
+        <section class="login-box" aria-label="Autenticação">
+
+            <!-- LOGOTIPO -->
+
+            <div class="theme-palette" data-theme-palette aria-label="Escolha a cor do site" style="margin:0 auto 1rem; width:max-content;"></div>
+
+            <div class="login-logo">
+
+                <img class="brand-logo-image" src="logo.png" alt="Gustavo & Emily — Assistência Técnica">
+
+                <h1>Gustavo & Emily</h1>
+
+                <p>Assistência Técnica</p>
+                <p>Área do cliente e do administrador</p>
+
+            </div>
+
+            <!-- ABAS -->
+
+            <div
+                class="auth-tabs"
+                role="tablist"
+                aria-label="Tipo de autenticação">
+
+                <button
+                    type="button"
+                    class="auth-tab active"
+                    id="tabLoginBtn"
+                    role="tab"
+                    aria-selected="true"
+                    aria-controls="loginForm"
+                    tabindex="0">
+
+                    Entrar
+
+                </button>
+
+                <button
+                    type="button"
+                    class="auth-tab"
+                    id="tabRegisterBtn"
+                    role="tab"
+                    aria-selected="false"
+                    aria-controls="registerForm"
+                    tabindex="-1">
+
+                    Criar conta
+
+                </button>
+
+            </div>
+
+            <!-- FORMULÁRIO DE LOGIN -->
+
+            <form
+                class="auth-form active"
+                id="loginForm"
+                novalidate
+                aria-labelledby="tabLoginBtn">
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="loginEmail">
+
+                        E-mail
+
+                    </label>
+
+                    <input
+                        type="email"
+                        class="form-input"
+                        id="loginEmail"
+                        name="email"
+                        placeholder="Digite seu e-mail"
+                        autocomplete="email"
+                        maxlength="254"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="loginPassword">
+
+                        Senha
+
+                    </label>
+
+                    <input
+                        type="password"
+                        class="form-input"
+                        id="loginPassword"
+                        name="password"
+                        placeholder="Digite sua senha"
+                        autocomplete="current-password"
+                        required>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary btn-lg btn-block"
+                    id="loginBtn">
+
+                    Entrar
+
+                </button>
+
+                <a
+                    href="#"
+                    id="forgotLink"
+                    class="forgot-password">
+
+                    Esqueceu a senha?
+
+                </a>
+
+            </form>
+
+            <!-- FORMULÁRIO DE CADASTRO -->
+
+            <form
+                class="auth-form"
+                id="registerForm"
+                novalidate
+                aria-labelledby="tabRegisterBtn"
+                aria-hidden="true">
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="registerName">
+
+                        Nome completo
+
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-input"
+                        id="registerName"
+                        name="name"
+                        placeholder="Digite seu nome completo"
+                        autocomplete="name"
+                        maxlength="150"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="registerEmail">
+
+                        E-mail
+
+                    </label>
+
+                    <input
+                        type="email"
+                        class="form-input"
+                        id="registerEmail"
+                        name="email"
+                        placeholder="Digite seu e-mail"
+                        autocomplete="email"
+                        maxlength="254"
+                        required>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="registerPhone">
+
+                        Telefone
+
+                    </label>
+
+                    <input
+                        type="tel"
+                        class="form-input"
+                        id="registerPhone"
+                        name="phone"
+                        placeholder="(00) 00000-0000"
+                        autocomplete="tel"
+                        inputmode="tel"
+                        maxlength="20">
+
+                </div>
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="registerPassword">
+
+                        Senha
+
+                    </label>
+
+                    <input
+                        type="password"
+                        class="form-input"
+                        id="registerPassword"
+                        name="password"
+                        placeholder="Crie uma senha"
+                        minlength="6"
+                        autocomplete="new-password"
+                        required>
+
+                    <small class="password-help">
+                        A senha deve conter pelo menos 6 caracteres.
+                    </small>
+
+                </div>
+
+                <div class="form-group">
+
+                    <label
+                        class="form-label"
+                        for="registerConfirm">
+
+                        Confirmar senha
+
+                    </label>
+
+                    <input
+                        type="password"
+                        class="form-input"
+                        id="registerConfirm"
+                        name="password_confirmation"
+                        placeholder="Digite a senha novamente"
+                        minlength="6"
+                        autocomplete="new-password"
+                        required>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-success btn-lg btn-block"
+                    id="registerBtn">
+
+                    Criar conta
+
+                </button>
+
+            </form>
+
+            <!-- ALTERNÂNCIA ENTRE FORMULÁRIOS -->
+
+            <div class="switch-auth" id="switchAuthContainer">
+
+                <span id="switchText">
+                    Não tem uma conta?
+                </span>
+
+                <a
+                    href="#"
+                    id="switchLink">
+
+                    Criar conta
+
+                </a>
+
+            </div>
+
+            <!-- VOLTAR -->
+
+            <div class="back-home-container">
+
+                <a
+                    href="index.html"
+                    class="back-home">
+
+                    ← Voltar ao início
+
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- NOTIFICAÇÕES -->
+
+    <div
+        class="toast-container"
+        id="toastContainer"
+        aria-live="polite"
+        aria-atomic="true">
+    </div>
+
+    <!-- SUPABASE -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+    <!-- AUTENTICAÇÃO -->
+
+    <script src="auth.js?v=final20260920"></script>
+
+    <!-- CONTROLE DA TELA DE LOGIN -->
+
+    <script>
+        (() => {
+            'use strict';
+
+            document.addEventListener('DOMContentLoaded', () => {
+
+                const tabLoginBtn = document.getElementById('tabLoginBtn');
+                const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+
+                const loginForm = document.getElementById('loginForm');
+                const registerForm = document.getElementById('registerForm');
+
+                const switchText = document.getElementById('switchText');
+                const switchLink = document.getElementById('switchLink');
+                const forgotLink = document.getElementById('forgotLink');
+
+                if (
+                    !tabLoginBtn ||
+                    !tabRegisterBtn ||
+                    !loginForm ||
+                    !registerForm ||
+                    !switchText ||
+                    !switchLink
+                ) {
+                    console.error(
+                        'Erro: elementos necessários da tela de login não foram encontrados.'
+                    );
+                    return;
+                }
+
+                function showTab(tab) {
+                    const isLogin = tab === 'login';
+
+                    tabLoginBtn.classList.toggle('active', isLogin);
+                    tabRegisterBtn.classList.toggle('active', !isLogin);
+
+                    tabLoginBtn.setAttribute('aria-selected', String(isLogin));
+                    tabRegisterBtn.setAttribute('aria-selected', String(!isLogin));
+
+                    tabLoginBtn.setAttribute('tabindex', isLogin ? '0' : '-1');
+                    tabRegisterBtn.setAttribute('tabindex', isLogin ? '-1' : '0');
+
+                    loginForm.classList.toggle('active', isLogin);
+                    registerForm.classList.toggle('active', !isLogin);
+
+                    loginForm.setAttribute('aria-hidden', String(!isLogin));
+                    registerForm.setAttribute('aria-hidden', String(isLogin));
+
+                    switchText.textContent = isLogin
+                        ? 'Não tem uma conta?'
+                        : 'Já tem uma conta?';
+
+                    switchLink.textContent = isLogin
+                        ? 'Criar conta'
+                        : 'Fazer login';
+
+                    if (isLogin) {
+                        tabLoginBtn.focus({ preventScroll: true });
+                    } else {
+                        tabRegisterBtn.focus({ preventScroll: true });
+                    }
+                }
+
+                tabLoginBtn.addEventListener('click', () => {
+                    showTab('login');
+                });
+
+                tabRegisterBtn.addEventListener('click', () => {
+                    showTab('register');
+                });
+
+                switchLink.addEventListener('click', (event) => {
+                    event.preventDefault();
+
+                    const isLoginActive =
+                        loginForm.classList.contains('active');
+
+                    showTab(isLoginActive ? 'register' : 'login');
+                });
+
+                loginForm.addEventListener('submit', (event) => {
+                    if (typeof window.handleLogin === 'function') {
+                        window.handleLogin(event);
+                    } else {
+                        event.preventDefault();
+                        alert(
+                            'O arquivo auth.js não foi carregado. Recarregue a página.'
+                        );
+                    }
+                });
+
+                registerForm.addEventListener('submit', (event) => {
+                    if (typeof window.handleRegister === 'function') {
+                        window.handleRegister(event);
+                    } else {
+                        event.preventDefault();
+                        alert(
+                            'O arquivo auth.js não foi carregado. Recarregue a página.'
+                        );
+                    }
+                });
+
+                if (forgotLink) {
+                    forgotLink.addEventListener('click', (event) => {
+                        event.preventDefault();
+
+                        if (typeof window.showForgotPassword === 'function') {
+                            window.showForgotPassword();
+                        } else {
+                            alert(
+                                'A recuperação de senha não está disponível.'
+                            );
+                        }
+                    });
+                }
+
+                window.switchTab = (tab) => {
+                    if (tab === 'register' || tab === 'login') {
+                        showTab(tab);
+                    }
+                };
+
+                const params = new URLSearchParams(window.location.search);
+                const selectedTab = params.get('tab');
+
+                showTab(selectedTab === 'register' ? 'register' : 'login');
+
+                // Permite alternar as abas usando as setas do teclado.
+                [tabLoginBtn, tabRegisterBtn].forEach((tabButton) => {
+                    tabButton.addEventListener('keydown', (event) => {
+                        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                            event.preventDefault();
+
+                            const nextTab =
+                                tabButton === tabLoginBtn
+                                    ? 'register'
+                                    : 'login';
+
+                            showTab(nextTab);
+                        }
+                    });
+                });
+
+            });
+
+        })();
+    </script>
+
+    <script src="pro-features.js?v=20260920-final"></script>
+    <script src="viper-inspired-motion.js?v=20260920-motion"></script>
+</body>
+
+</html>

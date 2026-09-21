@@ -1,0 +1,135 @@
+/* Viper-inspired motion layer — visual only, no business logic changes. */
+:root {
+  --motion-blue: #087ff5;
+  --motion-cyan: #27d8ff;
+  --motion-green: #19d58a;
+  --motion-bg: #050b14;
+  --motion-panel: rgba(10, 24, 40, .78);
+  --motion-border: rgba(135, 196, 255, .16);
+}
+
+html { scroll-behavior: smooth; }
+body {
+  overflow-x: hidden;
+  background-color: var(--motion-bg) !important;
+  background-image:
+    radial-gradient(circle at 8% 5%, rgba(8,127,245,.17), transparent 28%),
+    radial-gradient(circle at 92% 18%, rgba(39,216,255,.09), transparent 25%),
+    radial-gradient(circle at 50% 100%, rgba(25,213,138,.07), transparent 30%) !important;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+body::before {
+  width: 34rem;
+  height: 34rem;
+  top: -18rem;
+  right: -12rem;
+  background: radial-gradient(circle, rgba(8,127,245,.15), transparent 68%);
+  animation: motionFloat 18s ease-in-out infinite alternate;
+}
+body::after {
+  width: 28rem;
+  height: 28rem;
+  bottom: -16rem;
+  left: -10rem;
+  background: radial-gradient(circle, rgba(25,213,138,.11), transparent 68%);
+  animation: motionFloat 22s ease-in-out infinite alternate-reverse;
+}
+
+body.motion-ready > * { animation: motionPageIn .55s ease both; }
+body.motion-ready .header,
+body.motion-ready .section,
+body.motion-ready .card,
+body.motion-ready .panel,
+body.motion-ready .action-card,
+body.motion-ready .budget-request-card,
+body.motion-ready .service-item-client,
+body.motion-ready .notifications-panel,
+body.motion-ready .stat-card,
+body.motion-ready .modal,
+body.motion-ready .login-box {
+  animation: motionRise .55s cubic-bezier(.2,.7,.2,1) both;
+}
+
+.header,
+.card,
+.panel,
+.section,
+.action-card,
+.budget-request-card,
+.service-item-client,
+.notifications-panel,
+.stat-card,
+.login-box,
+.modal {
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-color: var(--motion-border) !important;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+
+.card:hover,
+.panel:hover,
+.action-card:hover,
+.budget-request-card:hover,
+.service-item-client:hover,
+.stat-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(39,216,255,.34) !important;
+  box-shadow: 0 18px 55px rgba(0,0,0,.24), 0 0 0 1px rgba(39,216,255,.04);
+}
+
+.btn,
+button,
+.auth-btn,
+a.btn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform .2s ease, filter .2s ease, box-shadow .2s ease !important;
+}
+.btn:hover,
+button:hover,
+.auth-btn:hover,
+a.btn:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.btn:active,
+button:active,
+.auth-btn:active,
+a.btn:active { transform: translateY(0) scale(.98); }
+
+.motion-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(110deg, transparent 25%, rgba(255,255,255,.22), transparent 75%);
+  animation: motionShine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.motion-reveal { opacity: 0; transform: translateY(16px); }
+.motion-reveal.motion-visible { opacity: 1; transform: translateY(0); transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+
+@keyframes motionPageIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes motionRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes motionFloat { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(28px,24px,0) scale(1.12); } }
+@keyframes motionShine { 0%, 65%, 100% { transform: translateX(-120%); } 80% { transform: translateX(120%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .motion-reveal { opacity: 1; transform: none; }
+}
+
+@media (max-width: 700px) {
+  body::before { width: 22rem; height: 22rem; }
+  body::after { width: 18rem; height: 18rem; }
+  .card:hover, .panel:hover, .action-card:hover, .budget-request-card:hover, .service-item-client:hover, .stat-card:hover { transform: none; }
+}
